@@ -12,6 +12,7 @@ import {
   AUTO_BREAK_WARNING,
   type MonthlyReport,
 } from "./report";
+import { ABSENCE_LABEL } from "@/lib/time/absence-kinds";
 
 /**
  * Escape one field for semicolon-delimited CSV.
@@ -136,7 +137,7 @@ export function monthlyReportCsv(report: MonthlyReport): string {
     for (const a of report.absences) {
       lines.push(
         row([
-          a.type === "VACATION" ? "Urlaub" : "Krank",
+          ABSENCE_LABEL[a.type],
           `${formatDayKey(a.from)} – ${formatDayKey(a.to)}`,
           `${a.days} Tage`,
           a.note ?? "",

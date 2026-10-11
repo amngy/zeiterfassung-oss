@@ -27,7 +27,10 @@ verarbeitet werden insbesondere:
   Gerätetyp (z. B. „iPhone · Safari“) — ohne eindeutige Gerätekennung und ohne
   Standort.
 - Abwesenheiten: Urlaub und Krankheitszeiten (inkl. Vorliegen einer AU-
-  Bescheinigung als Ja/Nein-Kennzeichen — **keine Diagnosedaten**).
+  Bescheinigung als Ja/Nein-Kennzeichen — **keine Diagnosedaten**) sowie
+  Sonderurlaub, Fortbildung, Dienstreise, Freizeitausgleich, unbezahlter Urlaub,
+  Elternzeit, Mutterschutz und „Kind krank“ (§ 45 SGB V), jeweils nur Art und
+  Zeitraum.
 - Protokolldaten zu Änderungen (Wer, Wann, Was, Alt→Neu, Grund).
 
 Es findet **keine** biometrische Erfassung, **keine** Standortverfolgung und

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { requireActiveUser } from "@/lib/session";
 import {
   AbsenceError,
-  createVacationRequest,
+  absenceLabel,
+  createAbsenceRequest,
   recordSick,
   withdrawAbsence,
 } from "@/lib/absences";
@@ -22,13 +23,14 @@ function refresh(): void {
   revalidatePath("/admin/abwesenheiten");
 }
 
-/** Employee submits a vacation request for approval. */
+/** Employee submits a leave (or other absence) request for approval. */
 export async function submitVacationRequest(
   _prev: AbsenceFormState | undefined,
   formData: FormData,
 ): Promise<AbsenceFormState> {
   const user = await requireActiveUser();
   const parsed = vacationRequestSchema.safeParse({
+    type: formData.get("type") ?? undefined,
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate"),
     halfDayStart: formData.get("halfDayStart") === "on",
@@ -38,10 +40,11 @@ export async function submitVacationRequest(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe." };
   }
-  const { startDate, endDate, halfDayStart, halfDayEnd, note } = parsed.data;
+  const { type, startDate, endDate, halfDayStart, halfDayEnd, note } = parsed.data;
 
   try {
-    await createVacationRequest({
+    await createAbsenceRequest({
+      type,
       userId: user.id,
       requestedById: user.id,
       fromKey: startDate,
@@ -55,7 +58,10 @@ export async function submitVacationRequest(
     throw e;
   }
   refresh();
-  return { ok: true, message: "Urlaubsantrag eingereicht. Er wird von der Verwaltung geprüft." };
+  return {
+    ok: true,
+    message: `Antrag (${absenceLabel(type)}) eingereicht. Er wird von der Verwaltung geprüft.`,
+  };
 }
 
 /** Employee records their own sick leave (a recorded fact, no approval needed). */

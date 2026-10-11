@@ -14,6 +14,7 @@
 // silently smaller target, and makes a part-worked sick day come out right.
 
 import type { AbsenceEffect, AbsenceKind } from "./types";
+import { absenceRank } from "./absence-kinds";
 import { eachDayKey } from "./tz";
 
 /** One recorded absence spell, as the store holds it. */
@@ -77,8 +78,9 @@ export function absenceDayMap(
   return out;
 }
 
-/** Sickness outranks leave; otherwise the wider cover wins. */
+/** The higher-ranked kind wins (see absenceRank); otherwise the wider cover. */
 function beats(candidate: AbsenceEffect, existing: AbsenceEffect): boolean {
-  if (candidate.kind !== existing.kind) return candidate.kind === "SICK";
+  const byRank = absenceRank(candidate.kind) - absenceRank(existing.kind);
+  if (byRank !== 0) return byRank > 0;
   return candidate.fraction > existing.fraction;
 }

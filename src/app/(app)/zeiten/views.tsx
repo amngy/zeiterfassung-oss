@@ -11,20 +11,23 @@ import {
   formatDayKey,
   formatHm,
   formatSigned,
+  ABSENCE_LABEL,
+  ABSENCE_TREATMENT,
+  isSicknessKind,
   type DaySegment,
   type DaySummary,
   type PeriodSummary,
   type Violation,
 } from "@/lib/time";
 
-const STATUS_HINT = `Tagesstatus: „läuft“ = Erfassung noch offen/aktiv, „offen“ = nicht ausgestempelt (zählt nicht, Korrektur nötig), „Urlaub“/„Krank“ = genehmigte Abwesenheit (Sollzeit wird gutgeschrieben), „kein Eintrag“ = Arbeitstag mit Soll ohne Buchung, „frei“ = kein Solltag oder Feiertag.`;
+const STATUS_HINT = `Tagesstatus: „läuft“ = Erfassung noch offen/aktiv, „offen“ = nicht ausgestempelt (zählt nicht, Korrektur nötig), „Urlaub“/„Krank“ usw. = genehmigte Abwesenheit (je nach Art Gutschrift der Sollzeit, Abzug vom Überstundensaldo oder Wegfall der Sollzeit), „kein Eintrag“ = Arbeitstag mit Soll ohne Buchung, „frei“ = kein Solltag oder Feiertag.`;
 
-const ABSENCE_HINT = `Bezahlte Zeit, die für genehmigten Urlaub oder erfasste Krankheit gutgeschrieben wurde. Das Soll bleibt stehen — die Stunden werden nicht gestrichen, sondern ausgeglichen. Es gilt: Saldo = Ist + Abwesenheit − Soll. Ein halber Urlaubstag schreibt das halbe Tagessoll gut; wer an einem Krankheitstag noch gearbeitet hat, bekommt nur die fehlenden Stunden ergänzt.`;
+const ABSENCE_HINT = `Bezahlte Zeit, die für genehmigte Abwesenheit (Urlaub, Krankheit, Sonderurlaub, Fortbildung, Dienstreise) gutgeschrieben wurde. Freizeitausgleich schreibt nichts gut; bei unbezahltem Urlaub, Elternzeit, Mutterschutz und „Kind krank“ entfällt stattdessen das Soll. Das Soll bleibt stehen — die Stunden werden nicht gestrichen, sondern ausgeglichen. Es gilt: Saldo = Ist + Abwesenheit − Soll. Ein halber Urlaubstag schreibt das halbe Tagessoll gut; wer an einem Krankheitstag noch gearbeitet hat, bekommt nur die fehlenden Stunden ergänzt.`;
 
-/** "Urlaub" / "Krank", plus the half-day marker when only part of it is covered. */
+/** "Urlaub", "Krank", "Elternzeit", …, plus the half-day marker when only part of it is covered. */
 function absenceLabel(day: DaySummary): string | null {
   if (!day.absence) return null;
-  const base = day.absence.kind === "SICK" ? "Krank" : "Urlaub";
+  const base = ABSENCE_LABEL[day.absence.kind];
   return day.absence.fraction < 1 ? `${base} (halbtags)` : base;
 }
 
@@ -115,8 +118,10 @@ function DayStatusBadge({ day }: { day: DaySummary }) {
   // An approved absence explains an empty working day, so it is shown INSTEAD of
   // "kein Eintrag" — the day is accounted for and needs nothing from anybody.
   const absence = absenceLabel(day);
-  if (absence && day.expectedMs > 0) {
-    return <Badge tone={day.absence?.kind === "SICK" ? "info" : "teal"}>{absence}</Badge>;
+  // Unpaid kinds drop the Soll, so their working days show up here with 0 Soll.
+  const dropsSoll = day.absence ? ABSENCE_TREATMENT[day.absence.kind] === "NO_SOLL" : false;
+  if (absence && (day.expectedMs > 0 || (dropsSoll && day.isWorkingDay))) {
+    return <Badge tone={day.absence && isSicknessKind(day.absence.kind) ? "info" : "teal"}>{absence}</Badge>;
   }
   // Only a contracted working day that still expects hours (i.e. not a holiday
   // or company day off) counts as a missing entry; an off day is just "frei".

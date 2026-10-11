@@ -14,6 +14,7 @@ import { clip, subtractIntervals, totalMs, type MsInterval } from "./duration";
 import { expectedHoursForDate, scheduleForDay } from "./schedule";
 import { closeUnfinishedBreaks } from "./breaks";
 import { buildShifts } from "./shifts";
+import { ABSENCE_TREATMENT } from "./absence-kinds";
 
 const HOUR_MS = 3_600_000;
 const DEFAULT_MAX_OPEN_HOURS = 16;
@@ -193,9 +194,14 @@ function summarizeResolvedDay(
   const breakMs = recordedBreakMs + autoBreakMs;
 
   const expectedHours = expectedHoursForDate(schedules, dayKey, opts.holidays);
-  const expectedMs = expectedHours * HOUR_MS;
+  const absence = opts.absences?.get(dayKey) ?? null;
+  const treatment = absence ? ABSENCE_TREATMENT[absence.kind] : null;
+  // Unpaid kinds (unbezahlter Urlaub, Elternzeit, …) take their share of the
+  // day out of the Soll, as a holiday does: nothing is owed, nothing credited.
+  const expectedMs =
+    expectedHours * HOUR_MS * (treatment === "NO_SOLL" ? 1 - absence!.fraction : 1);
 
-  // An approved absence TOPS THE DAY UP to its Soll — it never reduces the Soll
+  // A paid absence TOPS THE DAY UP to its Soll — it never reduces the Soll
   // (that is what a holiday does) and never pays beyond it. Three consequences,
   // all of them the ones the payroll figure needs:
   //   · a whole day off comes out at exactly 0, not at minus a working day;
@@ -203,10 +209,11 @@ function summarizeResolvedDay(
   //     as its own figure, so nobody has to guess where the difference went;
   //   · a day somebody was sent home ill part-way through is topped up by the
   //     hours they missed, and hours worked ON a day off still show as overtime.
-  const absence = opts.absences?.get(dayKey) ?? null;
-  const absenceMs = absence
-    ? Math.max(0, Math.min(expectedMs * absence.fraction, expectedMs - workedMs))
-    : 0;
+  // Freizeitausgleich credits nothing: the Soll stays and comes out of overtime.
+  const absenceMs =
+    treatment === "CREDIT"
+      ? Math.max(0, Math.min(expectedMs * absence!.fraction, expectedMs - workedMs))
+      : 0;
 
   const schedule = scheduleForDay(schedules, dayKey);
   const contracted = schedule ? schedule.hours[weekdayOfKey(dayKey)] : 0;
