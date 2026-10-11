@@ -53,8 +53,9 @@ Lohnabrechnung erforderlich ist.
 ## Wie lange werden die Daten gespeichert?
 
 So lange, wie gesetzliche Aufbewahrungsfristen es verlangen (Arbeitszeitnachweise
-≥ 2 Jahre; sozialversicherungs-/lohnsteuerrechtlich teils länger). Danach werden
-die Daten anonymisiert oder gelöscht. Der Gerätetyp einer Stempelung wird
+≥ 2 Jahre; sozialversicherungs-/lohnsteuerrechtlich teils länger), gerechnet ab
+Ende des Kalenderjahres. Danach werden die Daten gelöscht; das Konto
+ausgeschiedener Beschäftigter wird anonymisiert. Der Gerätetyp einer Stempelung wird
 [spätestens] bei der Anonymisierung entfernt.
 
 ## Ihre Rechte
