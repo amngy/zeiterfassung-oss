@@ -71,6 +71,7 @@ export const correctionPolicySchema = z.object({
 export const punchPolicySchema = z.object({
   recordDeviceType: z.boolean().default(false),
   reviewRemoteOvertimeMinutes: num(0, 600).pipe(z.number().int("Bitte ganze Minuten angeben")),
+  deviceLabelMonths: num(1, 24).pipe(z.number().int("Bitte ganze Monate angeben")),
 });
 
 export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;

@@ -307,6 +307,8 @@ function retentionText(v: unknown): string | undefined {
       ["auditEntries", "Protokolleinträge"],
     ] as const
   ).map(([k, label]) => `${asNum(o[k]) ?? 0} ${label}`);
+  const devices = asNum(o.deviceLabels);
+  if (devices) parts.push(`${devices} Gerätetypen entfernt`);
   return `vor ${shortDate(cutoff)} · ${parts.join(", ")}`;
 }
 

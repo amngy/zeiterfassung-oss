@@ -66,7 +66,7 @@ So lange, wie gesetzliche Aufbewahrungsfristen es verlangen (Arbeitszeitnachweis
 ≥ 2 Jahre; sozialversicherungs-/lohnsteuerrechtlich teils länger), gerechnet ab
 Ende des Kalenderjahres. Danach werden die Daten gelöscht; das Konto
 ausgeschiedener Beschäftigter wird anonymisiert. Der Gerätetyp einer Stempelung wird
-[spätestens] bei der Anonymisierung entfernt.
+schon nach [3] Monaten entfernt.
 
 ## Ihre Rechte
 
