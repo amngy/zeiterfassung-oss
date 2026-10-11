@@ -169,6 +169,14 @@ const ACTIONS: Record<string, ActionMeta> = {
   "settings.ruleProfile": { label: "Einstellungen · Regelprofil", category: "einstellung" },
   "settings.minorRuleProfile": { label: "Einstellungen · Jugend-Regelprofil", category: "einstellung" },
   "settings.correctionPolicy": { label: "Einstellungen · Korrektur-Governance", category: "einstellung" },
+  "settings.punchPolicy": { label: "Einstellungen · Stempeln", category: "einstellung" },
+
+  // Terminals (QR-Code am Eingang)
+  "terminal.create": { label: "Terminal angelegt", category: "einstellung" },
+  "terminal.pair-code": { label: "Kopplungslink für Terminal erzeugt", category: "einstellung" },
+  "terminal.pair": { label: "Terminal gekoppelt", category: "einstellung" },
+  "terminal.activate": { label: "Terminal aktiviert", category: "einstellung" },
+  "terminal.deactivate": { label: "Terminal deaktiviert", category: "einstellung" },
 
   // System
   "retention.purge": { label: "Abgelaufene Daten gelöscht (Aufbewahrung)", category: "system" },
