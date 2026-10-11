@@ -73,6 +73,11 @@ export const correctionPolicySchema = z.object({
   autoLockOnMonthExport: z.boolean().default(false),
 });
 
+/** What a punch records about its device. */
+export const punchPolicySchema = z.object({
+  recordDeviceType: z.boolean().default(false),
+});
+
 export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;
 export type RoundingInput = z.infer<typeof roundingSchema>;
 export type RuleProfileInput = z.infer<typeof ruleProfileSchema>;

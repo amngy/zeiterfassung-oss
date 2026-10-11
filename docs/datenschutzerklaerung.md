@@ -22,13 +22,20 @@ verarbeitet werden insbesondere:
   Funktion), ggf. Geburtsdatum (zur Anwendung des Jugendarbeitsschutzes) und
   Status der Schwerbehinderung (für den gesetzlichen Zusatzurlaub).
 - Arbeitszeitdaten: Beginn, Ende und Dauer von Arbeits- und Pausenzeiten,
-  Korrekturen und deren Begründungen.
+  Korrekturen und deren Begründungen; je Stempelung der Erfassungsweg
+  (z. B. Browser). [Nur falls aktiviert:] zusätzlich der grob erkannte
+  Gerätetyp (z. B. „iPhone · Safari“) — ohne eindeutige Gerätekennung und ohne
+  Standort.
 - Abwesenheiten: Urlaub und Krankheitszeiten (inkl. Vorliegen einer AU-
   Bescheinigung als Ja/Nein-Kennzeichen — **keine Diagnosedaten**).
 - Protokolldaten zu Änderungen (Wer, Wann, Was, Alt→Neu, Grund).
 
 Es findet **keine** biometrische Erfassung, **keine** Standortverfolgung und
-**keine** Verhaltens- oder Leistungsüberwachung statt.
+**keine** Leistungsbewertung statt. [Nur falls aktiviert:] Der Gerätetyp dient
+ausschließlich der Plausibilitätsprüfung einzelner Stempelungen — etwa ob ein
+Arbeitsende am Arbeitsplatz oder auf einem Mobilgerät erfasst wurde — und wird
+nicht zu Profilen ausgewertet. [Bei Betriebsrat: Grundlage ist die
+Betriebsvereinbarung vom …]
 
 ## 3. Rechtsgrundlagen
 
@@ -63,6 +70,10 @@ gesetzlichen Aufbewahrungsfristen gespeichert. Mehrere Fristen überlagern sich:
 Die in der Anwendung hinterlegte Aufbewahrungsfrist ist konfigurierbar
 (Voreinstellung: 4 Jahre). Nach Ablauf wird der Datensatz **deaktiviert und
 anonymisiert** (statt sofort gelöscht), soweit keine Frist mehr entgegensteht.
+
+Für den Gerätetyp einer Stempelung besteht keine Aufbewahrungspflicht. Er wird
+derzeit mit dem Zeiteintrag gespeichert und bei der Anonymisierung entfernt.
+[Kürzere Frist festlegen, z. B. … Monate.]
 
 ## 6. Rechte der betroffenen Personen
 

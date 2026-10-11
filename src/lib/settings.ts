@@ -52,6 +52,17 @@ export interface BreakPolicy {
   unfinishedBreakMinutes: number;
 }
 
+/**
+ * What is recorded about HOW a punch arrived. The channel (browser, terminal,
+ * NFC, QR) is always kept. The coarse device type of the employee's own device
+ * ("iPhone · Safari") is a technical facility suited to monitoring behaviour —
+ * §87(1) Nr. 6 BetrVG co-determination and an Art. 13 notice come first — so it
+ * is off until the operator switches it on (privacy by default, Art. 25(2)).
+ */
+export interface PunchPolicy {
+  recordDeviceType: boolean;
+}
+
 export interface CorrectionPolicy {
   allowSelfCreate: boolean; // employees may record their own entries
   selfCorrectionRequiresApproval: boolean; // default: true
@@ -72,6 +83,7 @@ export interface AppSettings {
   minorRuleProfile: RuleProfile; // JArbSchG (stricter, for under-18s)
   breakPolicy: BreakPolicy; // Pausenautomatik
   correctionPolicy: CorrectionPolicy;
+  punchPolicy: PunchPolicy;
 }
 
 // Sensible legal defaults. The operator can change every value in the admin UI;
@@ -125,6 +137,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     lockAfterDays: 0,
     autoLockOnMonthExport: true,
   },
+  punchPolicy: { recordDeviceType: false },
 };
 
 type SettingKey = keyof AppSettings;

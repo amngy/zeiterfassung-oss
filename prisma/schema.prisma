@@ -34,6 +34,22 @@ enum EntrySource {
   MANUAL
 }
 
+// How a punch reached the server. WEB is any browser (desktop or phone);
+// KIOSK, NFC and QR are reserved for the on-site channels.
+enum ClockChannel {
+  WEB
+  KIOSK
+  NFC
+  QR
+}
+
+enum ClockEventKind {
+  CLOCK_IN
+  CLOCK_OUT
+  BREAK_START
+  BREAK_END
+}
+
 enum EntryStatus {
   ACTIVE
   SUPERSEDED
@@ -128,6 +144,7 @@ model User {
 
   schedules      WorkSchedule[]
   timeEntries    TimeEntry[]
+  clockEvents    ClockEvent[]
   absences       Absence[]
   corrections    CorrectionRequest[]
   vacationYears  VacationYear[]
@@ -180,11 +197,39 @@ model TimeEntry {
   batchId     String?
   createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clockEvents ClockEvent[]
 
   @@index([userId, start])
   @@index([userId, status])
   @@index([batchId])
+}
+
+// One row per punch (clock in/out, break start/end), written in the same
+// transaction as the TimeEntry it creates or completes, and never updated.
+// It records HOW a punch arrived, which the entry itself cannot: a TimeEntry
+// carries one start and one end, but the two punches behind them can come from
+// different devices — and the closing one is where abuse happens. Admin
+// corrections and backfills are not punches and write no ClockEvent; they are
+// versioned and audited instead.
+model ClockEvent {
+  id          String         @id @default(cuid())
+  userId      String
+  kind        ClockEventKind
+  // Server time — identical to the instant written to the entry.
+  at          DateTime
+  channel     ClockChannel
+  // Coarse, parsed from the User-Agent ("iPhone · Safari"). An indicator, not
+  // proof: a User-Agent can be spoofed. Never the raw header, never location.
+  deviceLabel String?
+  timeEntryId String
+  createdAt   DateTime       @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeEntry TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+
+  @@index([userId, at])
+  @@index([timeEntryId])
 }
 
 // Employee or admin request to create/change a record. Approval-gated.

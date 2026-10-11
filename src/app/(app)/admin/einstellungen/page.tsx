@@ -15,6 +15,7 @@ import {
   RuleProfileForm,
   BreakPolicyForm,
   CorrectionPolicyForm,
+  PunchPolicyForm,
 } from "./settings-forms";
 
 export const metadata: Metadata = { title: "Einstellungen" };
@@ -98,6 +99,18 @@ export default async function AdminSettingsPage() {
         </CardHeader>
         <CardContent>
           <CorrectionPolicyForm s={s} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Stempeln — Erfassungsweg</CardTitle>
+          <CardDescription>
+            Was zu jeder Stempelung über das verwendete Gerät gespeichert wird.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PunchPolicyForm s={s} />
         </CardContent>
       </Card>
 

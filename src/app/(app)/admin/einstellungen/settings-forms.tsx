@@ -15,6 +15,7 @@ import {
   saveMinorRuleProfileAction,
   saveBreakPolicyAction,
   saveCorrectionPolicyAction,
+  savePunchPolicyAction,
   type SettingsState,
 } from "./actions";
 
@@ -349,6 +350,26 @@ export function CorrectionPolicyForm({ s }: { s: AppSettings }) {
       >
         <Input id="cp-lock" name="lockAfterDays" type="number" min={0} max={3650} defaultValue={c.lockAfterDays} />
       </Field>
+      <Banner state={state} />
+      <div className="flex justify-end">
+        <Button type="submit" disabled={pending}>
+          Speichern
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export function PunchPolicyForm({ s }: { s: AppSettings }) {
+  const [state, action, pending] = useActionState<SettingsState, FormData>(savePunchPolicyAction, {});
+  return (
+    <form action={action} className="space-y-4">
+      <Check2
+        name="recordDeviceType"
+        label="Gerätetyp beim Stempeln erfassen"
+        defaultChecked={s.punchPolicy.recordDeviceType}
+        info={`Speichert zu jeder Stempelung den grob erkannten Gerätetyp, z. B. „iPhone · Safari“ oder „Windows · Edge“ — ohne Version, ohne Gerätekennung, ohne Standort. So wird sichtbar, ob z. B. ein spätes Ausstempeln vom Handy statt vom Büro-PC kam. Der Wert stammt aus der Browserkennung und ist ein Hinweis, kein Beweis. Weil die Angabe geeignet ist, Verhalten zu überwachen, besteht ein Mitbestimmungsrecht des Betriebsrats (§87 Abs. 1 Nr. 6 BetrVG); die Beschäftigten sind vorab zu informieren (Art. 13 DSGVO). Ausgeschaltet wird nur der Erfassungsweg (z. B. „Browser“) gespeichert. Gilt ab dem Speichern für neue Stempelungen.`}
+      />
       <Banner state={state} />
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>
