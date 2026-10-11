@@ -26,6 +26,13 @@ export const QR_WINDOW_MS = 30_000;
 export const QR_ACCEPT_PREVIOUS = 2;
 export const PAIR_TTL_MS = 15 * 60_000;
 export const TERMINAL_COOKIE = "zt_terminal";
+export const TERMINAL_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/terminal",
+  maxAge: 400 * 24 * 60 * 60, // the longest browsers keep a cookie
+} as const;
 const LAST_SEEN_RESOLUTION_MS = 5 * 60_000;
 
 export class TerminalError extends Error {}
@@ -38,8 +45,10 @@ function randomToken(bytes: number): string {
   return randomBytes(bytes).toString("base64url");
 }
 
+// The same secret Auth.js signs sessions with, found the way Auth.js finds it.
+// Rotating it only invalidates the codes of the last 90 s.
 function authSecret(): string {
-  const secret = process.env.AUTH_SECRET;
+  const secret = process.env.AUTH_SECRET ?? process.env.AUTH_SECRET_1 ?? process.env.NEXTAUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET is not set.");
   return secret;
 }
@@ -127,21 +136,27 @@ export async function terminalForCookie(value: string | undefined): Promise<Term
   return { id: terminal.id, label: terminal.label };
 }
 
-/** Record that the terminal is showing codes; written at most every 5 min. */
-export async function touchTerminal(id: string, at = new Date()): Promise<void> {
-  await prisma.clockTerminal.updateMany({
+/**
+ * Record that the terminal is showing codes; written at most every 5 min.
+ * Returns whether it wrote — the caller re-issues the device cookie then.
+ */
+export async function touchTerminal(id: string, at = new Date()): Promise<boolean> {
+  const res = await prisma.clockTerminal.updateMany({
     where: {
       id,
       OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: new Date(at.getTime() - LAST_SEEN_RESOLUTION_MS) } }],
     },
     data: { lastSeenAt: at },
   });
+  return res.count > 0;
 }
 
 export interface TerminalRow {
   id: string;
   label: string;
   active: boolean;
+  /** A device currently holds a token (deactivation drops it). */
+  paired: boolean;
   pairedAt: Date | null;
   lastSeenAt: Date | null;
   pairExpiresAt: Date | null;
@@ -153,11 +168,16 @@ export async function listTerminals(): Promise<TerminalRow[]> {
   const rows = await prisma.clockTerminal.findMany({
     orderBy: [{ active: "desc" }, { label: "asc" }],
     select: {
-      id: true, label: true, active: true, pairedAt: true, lastSeenAt: true,
+      id: true, label: true, active: true, tokenHash: true, pairedAt: true, lastSeenAt: true,
       pairExpiresAt: true, createdAt: true, _count: { select: { clockEvents: true } },
     },
   });
-  return rows.map(({ _count, ...r }) => ({ ...r, punchCount: _count.clockEvents }));
+  // The hash itself never leaves this module.
+  return rows.map(({ _count, tokenHash, ...r }) => ({
+    ...r,
+    paired: tokenHash !== null,
+    punchCount: _count.clockEvents,
+  }));
 }
 
 function cleanLabel(label: string): string {

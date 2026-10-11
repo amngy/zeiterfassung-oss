@@ -36,7 +36,9 @@ Gestempelt wird im Browser oder per **QR-Code an einem Terminal** (z. B. Tablet
 am Eingang): Das Terminal zeigt einen Code, der alle 30 Sekunden wechselt und
 serverseitig signiert ist; er wird höchstens 90 Sekunden lang angenommen. Die
 Mitarbeitenden scannen ihn mit dem eigenen, angemeldeten Handy. Der Zeitpunkt
-stammt in jedem Fall von der Serveruhr. Terminals werden von der Administration
+stammt in jedem Fall von der Serveruhr. Eine QR-Stempelung ist ein Hinweis auf
+Anwesenheit, kein Beweis: ein laufend weitergeleitetes Foto des Codes lässt sich
+technisch nicht ausschließen. Terminals werden von der Administration
 gekoppelt und deaktiviert (protokolliert).
 
 ### 3.1 Pausenautomatik

@@ -1,6 +1,12 @@
 import { cookies } from "next/headers";
 import QRCode from "qrcode";
-import { issueQrCode, terminalForCookie, touchTerminal, TERMINAL_COOKIE } from "@/lib/terminals";
+import {
+  issueQrCode,
+  terminalForCookie,
+  touchTerminal,
+  TERMINAL_COOKIE,
+  TERMINAL_COOKIE_OPTIONS,
+} from "@/lib/terminals";
 import { requestOrigin } from "@/lib/request-context";
 
 // The kiosk page polls this for the current code. Authenticated by the device
@@ -19,6 +25,12 @@ export async function GET(): Promise<Response> {
     errorCorrectionLevel: "M",
     margin: 2,
   });
-  await touchTerminal(terminal.id, now);
+  if (await touchTerminal(terminal.id, now)) {
+    // Every few minutes: push the 400-day cookie expiry forward, so a tablet
+    // in daily use is never silently signed out.
+    const store = await cookies();
+    const value = store.get(TERMINAL_COOKIE)?.value;
+    if (value) store.set(TERMINAL_COOKIE, value, TERMINAL_COOKIE_OPTIONS);
+  }
   return Response.json({ svg, changesInMs }, { headers: NO_STORE });
 }

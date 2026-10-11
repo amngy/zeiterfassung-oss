@@ -34,7 +34,7 @@ export default async function AdminTerminalsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-1.5 text-base">
             Terminal anlegen
-            <InfoHint>{`So geht's: 1. Terminal anlegen. 2. Den angezeigten Kopplungslink auf dem Tablet öffnen (z. B. den QR-Code mit der Tablet-Kamera scannen) und dort bestätigen. 3. Das Tablet zeigt ab dann dauerhaft den wechselnden Code; am besten im Vollbild- bzw. Kiosk-Modus des Geräts. Ein Code gilt höchstens 90 Sekunden — ein Foto davon ist danach wertlos. Gegen das Weiterleiten eines Live-Fotos schützt das nicht vollständig: eine QR-Stempelung ist ein starker Hinweis auf Anwesenheit, kein Beweis.`}</InfoHint>
+            <InfoHint>{`So geht's: 1. Terminal anlegen. 2. Den angezeigten Kopplungslink auf dem Tablet öffnen (z. B. den QR-Code mit der Tablet-Kamera scannen) und dort bestätigen. 3. Das Tablet zeigt ab dann dauerhaft den wechselnden Code; am besten im Vollbild- bzw. Kiosk-Modus des Geräts. Ein Code gilt höchstens 90 Sekunden — ein Foto davon ist danach wertlos. Wer den Code laufend abfotografiert und weiterleitet, kann aber von außerhalb stempeln: eine QR-Stempelung ist ein Hinweis auf Anwesenheit, kein Beweis. Das Terminal muss die Anwendung über HTTPS aufrufen (wie auf Railway üblich), sonst speichert der Browser die Kopplung nicht.`}</InfoHint>
           </CardTitle>
           <CardDescription>
             Danach den Kopplungslink auf dem Terminal-Gerät öffnen. Der Link gilt 15 Minuten und
@@ -67,14 +67,15 @@ export default async function AdminTerminalsPage() {
                         <span className="font-medium text-ink">{t.label}</span>
                         {!t.active ? (
                           <Badge tone="neutral">deaktiviert</Badge>
-                        ) : t.pairedAt ? (
+                        ) : t.paired ? (
                           <Badge tone="lime">gekoppelt</Badge>
                         ) : (
                           <Badge tone="warning">nicht gekoppelt</Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted">
-                        Gekoppelt: {when(t.pairedAt)} · Zuletzt aktiv: {when(t.lastSeenAt)} ·{" "}
+                        Gekoppelt: {t.paired ? when(t.pairedAt) : "—"} · Zuletzt aktiv:{" "}
+                        {when(t.lastSeenAt)} ·{" "}
                         {t.punchCount} Stempelungen
                       </p>
                     </div>

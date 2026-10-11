@@ -2,7 +2,12 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { pairTerminal, TerminalError, TERMINAL_COOKIE } from "@/lib/terminals";
+import {
+  pairTerminal,
+  TerminalError,
+  TERMINAL_COOKIE,
+  TERMINAL_COOKIE_OPTIONS,
+} from "@/lib/terminals";
 
 export interface PairState {
   error?: string;
@@ -19,13 +24,13 @@ export async function pairTerminalAction(
   const code = String(formData.get("code") ?? "");
   try {
     const { cookieValue } = await pairTerminal(code);
-    (await cookies()).set(TERMINAL_COOKIE, cookieValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/terminal",
-      maxAge: 400 * 24 * 60 * 60,
-    });
+    const store = await cookies();
+    // A shared device must not stay signed in as whoever set it up (often an
+    // admin who copied the link here): drop every Auth.js session cookie.
+    for (const c of store.getAll()) {
+      if (c.name.includes("authjs.session-token")) store.delete(c.name);
+    }
+    store.set(TERMINAL_COOKIE, cookieValue, TERMINAL_COOKIE_OPTIONS);
   } catch (e) {
     if (e instanceof TerminalError) return { error: e.message };
     throw e;

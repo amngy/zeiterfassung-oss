@@ -21,5 +21,7 @@ export default async function TerminalPage() {
       </main>
     );
   }
-  return <KioskDisplay label={terminal.label} />;
+  // Someone signed in on the shared device after pairing (pairing signs out).
+  const signedIn = (await cookies()).getAll().some((c) => c.name.includes("authjs.session-token"));
+  return <KioskDisplay label={terminal.label} signedInWarning={signedIn} />;
 }
