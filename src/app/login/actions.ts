@@ -2,12 +2,21 @@
 
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { AuthError } from "next-auth";
+import { AuthError, CredentialsSignin } from "next-auth";
 import { signIn } from "@/auth";
 
 export interface LoginState {
   error?: string;
+  /** Password accepted; the account needs its second factor (#14). */
+  step?: "code";
+  email?: string;
 }
+
+const CODE_ERRORS: Record<string, string | undefined> = {
+  "2fa_required": undefined,
+  "2fa_invalid": "Der Code stimmt nicht. Bitte den aktuellen Code aus der App eingeben.",
+  "2fa_blocked": "Zu viele falsche Codes. Bitte in 15 Minuten erneut versuchen.",
+};
 
 export async function authenticate(
   _prev: LoginState | undefined,
@@ -16,13 +25,20 @@ export async function authenticate(
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const remember = formData.get("remember") != null;
+  const code = String(formData.get("code") ?? "").trim();
 
   try {
-    await signIn("credentials", { email, password, redirect: false });
+    await signIn("credentials", { email, password, code, redirect: false });
   } catch (error) {
+    if (error instanceof CredentialsSignin && error.code in CODE_ERRORS) {
+      return { step: "code", email, error: CODE_ERRORS[error.code] };
+    }
     if (error instanceof AuthError) {
       // Generic message — never reveal whether the account exists.
-      return { error: "E-Mail-Adresse oder Passwort ist falsch." };
+      return {
+        error: "E-Mail-Adresse oder Passwort ist falsch.",
+        ...(code ? { step: "code" as const, email } : {}),
+      };
     }
     throw error;
   }

@@ -23,6 +23,7 @@
     "db:cleanup-demo": "tsx prisma/cleanup-demo.ts",
     "db:reset-audit": "tsx prisma/reset-audit.ts",
     "db:reset-timesheet": "tsx prisma/reset-timesheet.ts",
+    "db:reset-two-factor": "tsx prisma/reset-two-factor.ts",
     "db:recount-vacation": "tsx prisma/recount-vacation.ts",
     "db:check-integrity": "tsx prisma/check-integrity.ts",
     "db:check-midnight": "tsx prisma/check-midnight-starts.ts",
@@ -43,6 +44,7 @@
     "next": "^16.2.9",
     "next-auth": "^5.0.0-beta.31",
     "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "recharts": "^3.10.1",
@@ -52,6 +54,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
     "@types/node": "^22.20.5",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.6.1",
