@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { BRAND } from "@/config/brand";
 import "./globals.css";
@@ -18,6 +18,12 @@ export const metadata: Metadata = {
   },
   description: BRAND.description,
   robots: { index: false, follow: false },
+  // Installed on an iPhone home screen: open full-screen, under this name.
+  appleWebApp: { capable: true, title: BRAND.appName, statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: BRAND.colors.primary,
 };
 
 export default function RootLayout({

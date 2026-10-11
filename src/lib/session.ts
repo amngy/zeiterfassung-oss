@@ -3,6 +3,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import type { Role } from "@prisma/client";
 
+/**
+ * Where a valid JWT goes when its account is gone or deactivated. Not /login:
+ * the proxy only sees the JWT and would send it straight back (redirect loop).
+ */
+const SESSION_ENDED = "/sitzung-beendet";
+
 export interface SessionUser {
   id: string;
   name: string;
@@ -43,7 +49,7 @@ export async function requireUser(): Promise<SessionUser> {
     where: { id: user.id },
     select: { active: true, role: true, name: true, email: true },
   });
-  if (!fresh || !fresh.active) redirect("/login");
+  if (!fresh || !fresh.active) redirect(SESSION_ENDED);
   return {
     id: user.id,
     name: fresh.name,
@@ -66,7 +72,7 @@ export async function requireActiveUser(): Promise<SessionUser> {
     where: { id: user.id },
     select: { active: true, role: true, name: true, email: true },
   });
-  if (!fresh || !fresh.active) redirect("/login");
+  if (!fresh || !fresh.active) redirect(SESSION_ENDED);
   return {
     id: user.id,
     name: fresh.name,

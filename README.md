@@ -14,7 +14,10 @@ payroll-ready exports — all in German for end users.
 
 ## Features
 
-- **Clock in / out, breaks**, with a live "today" status.
+- **Clock in / out, breaks**, with a live "today" status — in the browser, or
+  by scanning the **rotating QR code on an entrance terminal** (a tablet under
+  Verwaltung → Terminals; the code changes every 30 s and is accepted for at
+  most 90 s). Every punch records how it arrived (browser / QR + terminal).
 - **Timesheets** by day / week / month with worked time, breaks and overtime
   (Gleitzeitsaldo).
 - **Tamper-evident corrections:** times are never overwritten — a correction

@@ -52,6 +52,8 @@ export interface ClockResult {
 export interface PunchContext {
   channel: ClockChannel;
   deviceLabel: string | null;
+  /** The on-site terminal whose QR code was scanned (channel QR). */
+  terminalId?: string | null;
 }
 
 const ok: ClockResult = { ok: true };
@@ -116,6 +118,7 @@ function recordEvent(
       at: args.at,
       channel: args.ctx.channel,
       deviceLabel: args.ctx.deviceLabel,
+      terminalId: args.ctx.terminalId ?? null,
       timeEntryId: args.timeEntryId,
     },
   });
@@ -218,13 +221,20 @@ export function endBreak(userId: string, ctx: PunchContext): Promise<ClockResult
   });
 }
 
-/** Channel + device label → "Browser · iPhone · Safari", for display and exports. */
-export function describePunch(e: { channel: ClockChannel; deviceLabel: string | null }): string {
+/**
+ * Channel, terminal and device label → "QR-Code · Eingang · iPhone · Safari",
+ * for display.
+ */
+export function describePunch(e: {
+  channel: ClockChannel;
+  deviceLabel: string | null;
+  terminal?: { label: string } | null;
+}): string {
   const channel: Record<ClockChannel, string> = {
     WEB: "Browser",
     KIOSK: "Terminal",
     NFC: "NFC-Tag",
     QR: "QR-Code",
   };
-  return [channel[e.channel], e.deviceLabel].filter(Boolean).join(" · ");
+  return [channel[e.channel], e.terminal?.label, e.deviceLabel].filter(Boolean).join(" · ");
 }

@@ -155,6 +155,7 @@ model User {
   schedules      WorkSchedule[]
   timeEntries    TimeEntry[]
   clockEvents    ClockEvent[]
+  punchReviews   PunchReview[] @relation("PunchReviewer")
   absences       Absence[]
   corrections    CorrectionRequest[]
   vacationYears  VacationYear[]
@@ -233,13 +234,52 @@ model ClockEvent {
   // proof: a User-Agent can be spoofed. Never the raw header, never location.
   deviceLabel String?
   timeEntryId String
+  // The on-site terminal whose code was scanned (channel QR); null otherwise.
+  terminalId  String?
   createdAt   DateTime       @default(now())
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  timeEntry TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeEntry TimeEntry      @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  terminal  ClockTerminal? @relation(fields: [terminalId], references: [id])
+  review    PunchReview?
 
   @@index([userId, at])
   @@index([timeEntryId])
+  @@index([terminalId])
+}
+
+// A shared device on site (e.g. a tablet at the entrance) that shows a QR code
+// rotating every 30 s; employees scan it with their phone to punch (channel QR).
+// An admin pairs the device once with a short-lived one-time code; from then on
+// it authenticates with a random token in a cookie. Both are stored only as
+// SHA-256 hashes. Terminals are deactivated, never deleted, so past punches keep
+// their reference.
+model ClockTerminal {
+  id            String    @id @default(cuid())
+  label         String
+  active        Boolean   @default(true)
+  tokenHash     String?   @unique
+  pairCodeHash  String?   @unique
+  pairExpiresAt DateTime?
+  pairedAt      DateTime?
+  lastSeenAt    DateTime?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+
+  clockEvents ClockEvent[]
+}
+
+// An admin's sign-off on a punch flagged for review (#32): a remote clock-out
+// that closed a day running clearly over its schedule. The flag itself is
+// computed from the stored punches and entries; only the review is kept.
+model PunchReview {
+  id           String   @id @default(cuid())
+  clockEventId String   @unique
+  reviewedById String?
+  reviewedAt   DateTime @default(now())
+
+  clockEvent ClockEvent @relation(fields: [clockEventId], references: [id], onDelete: Cascade)
+  reviewedBy User?      @relation("PunchReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 }
 
 // Employee or admin request to create/change a record. Approval-gated.

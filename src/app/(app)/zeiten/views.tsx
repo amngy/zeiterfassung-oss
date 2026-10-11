@@ -20,7 +20,16 @@ import {
   type Violation,
 } from "@/lib/time";
 
-const STATUS_HINT = `Tagesstatus: „läuft“ = Erfassung noch offen/aktiv, „offen“ = nicht ausgestempelt (zählt nicht, Korrektur nötig), „Urlaub“/„Krank“ usw. = genehmigte Abwesenheit (je nach Art Gutschrift der Sollzeit, Abzug vom Überstundensaldo oder Wegfall der Sollzeit), „kein Eintrag“ = Arbeitstag mit Soll ohne Buchung, „frei“ = kein Solltag oder Feiertag.`;
+const STATUS_HINT = `Tagesstatus: „läuft“ = Erfassung noch offen/aktiv, „offen“ = nicht ausgestempelt (zählt nicht, Korrektur nötig), „Urlaub“/„Krank“ usw. = genehmigte Abwesenheit (je nach Art Gutschrift der Sollzeit, Abzug vom Überstundensaldo oder Wegfall der Sollzeit), „kein Eintrag“ = Arbeitstag mit Soll ohne Buchung, „frei“ = kein Solltag oder Feiertag. „in Prüfung“/„geprüft“ = Arbeitsende über den Webzugang an einem Tag deutlich über dem Soll, von der Verwaltung zu prüfen bzw. geprüft.`;
+
+const REVIEW_HINT = `Der Tag endete mit einem Ausstempeln über den Webzugang und liegt deutlich über dem Soll. Die Verwaltung sieht ihn sich an; an den Zeiten ändert sich dadurch nichts.`;
+
+/** #32: a day closed by a remote clock-out, flagged for an admin's look. */
+function ReviewBadge({ state }: { state?: "open" | "reviewed" }) {
+  if (state === "open") return <Badge tone="warning" title={REVIEW_HINT}>in Prüfung</Badge>;
+  if (state === "reviewed") return <Badge tone="neutral" title={REVIEW_HINT}>geprüft</Badge>;
+  return null;
+}
 
 const ABSENCE_HINT = `Bezahlte Zeit, die für genehmigte Abwesenheit (Urlaub, Krankheit, Sonderurlaub, Fortbildung, Dienstreise) gutgeschrieben wurde. Freizeitausgleich schreibt nichts gut; bei unbezahltem Urlaub, Elternzeit, Mutterschutz und „Kind krank“ entfällt stattdessen das Soll. Das Soll bleibt stehen — die Stunden werden nicht gestrichen, sondern ausgeglichen. Es gilt: Saldo = Ist + Abwesenheit − Soll. Ein halber Urlaubstag schreibt das halbe Tagessoll gut; wer an einem Krankheitstag noch gearbeitet hat, bekommt nur die fehlenden Stunden ergänzt.`;
 
@@ -188,9 +197,12 @@ export function ViolationList({ violations }: { violations: Violation[] }) {
 export function TimesheetTable({
   period,
   violations = [],
+  reviewDays = {},
 }: {
   period: PeriodSummary;
   violations?: Violation[];
+  /** Days closed by a remote clock-out flagged for review (#32). */
+  reviewDays?: Record<string, "open" | "reviewed">;
 }) {
   const flaggedDays = new Set(violations.map((v) => v.date));
   return (
@@ -293,6 +305,7 @@ export function TimesheetTable({
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1.5">
                         <DayStatusBadge day={day} />
+                        <ReviewBadge state={reviewDays[day.date]} />
                         {flaggedDays.has(day.date) && (
                           <AlertTriangle
                             className="h-4 w-4 text-danger"
@@ -415,16 +428,21 @@ export function MyCorrections({ rows }: { rows: CorrectionRow[] }) {
 export function DayDetail({
   day,
   violations = [],
+  review,
 }: {
   day: DaySummary;
   violations?: Violation[];
+  review?: "open" | "reviewed";
 }) {
   return (
     <Card>
       <CardContent className="pt-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base font-medium text-teal">{formatDayKey(day.date)}</h3>
-          <DayStatusBadge day={day} />
+          <div className="flex items-center gap-1.5">
+            <DayStatusBadge day={day} />
+            <ReviewBadge state={review} />
+          </div>
         </div>
 
         {violations.length > 0 && (

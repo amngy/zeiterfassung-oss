@@ -1,12 +1,10 @@
 "use server";
 
-import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import * as clock from "@/lib/clock";
 import type { ClockResult, PunchContext } from "@/lib/clock";
-import { deviceLabel } from "@/lib/device-label";
+import { punchDeviceLabel } from "@/lib/request-context";
 import { requireActiveUser } from "@/lib/session";
-import { getAppSettings } from "@/lib/settings";
 
 // Thin server-action wrappers around @/lib/clock, which holds the punch logic,
 // its integrity guards and the ClockEvent record. Every punch from here arrives
@@ -16,10 +14,7 @@ import { getAppSettings } from "@/lib/settings";
 export type { ClockResult };
 
 async function webContext(): Promise<PunchContext> {
-  const { punchPolicy } = await getAppSettings();
-  if (!punchPolicy.recordDeviceType) return { channel: "WEB", deviceLabel: null };
-  const h = await headers();
-  return { channel: "WEB", deviceLabel: deviceLabel(h.get("user-agent")) };
+  return { channel: "WEB", deviceLabel: await punchDeviceLabel() };
 }
 
 function done(result: ClockResult): ClockResult {

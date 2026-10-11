@@ -11,7 +11,6 @@ import {
 import { InfoHint } from "@/components/ui/info-hint";
 import {
   GeneralForm,
-  RoundingForm,
   RuleProfileForm,
   BreakPolicyForm,
   CorrectionPolicyForm,
@@ -111,16 +110,6 @@ export default async function AdminSettingsPage() {
         </CardHeader>
         <CardContent>
           <PunchPolicyForm s={s} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Rundung</CardTitle>
-          <CardDescription>Optionales Runden erfasster Zeiten auf ein Intervall.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RoundingForm s={s} />
         </CardContent>
       </Card>
 
