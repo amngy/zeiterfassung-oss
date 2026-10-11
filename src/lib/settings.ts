@@ -61,6 +61,11 @@ export interface BreakPolicy {
  */
 export interface PunchPolicy {
   recordDeviceType: boolean;
+  /**
+   * A day closed by a remote (web) clock-out that ends more than this many
+   * minutes over its Soll is shown to admins for review (#32). 0 = off.
+   */
+  reviewRemoteOvertimeMinutes: number;
 }
 
 export interface CorrectionPolicy {
@@ -78,7 +83,6 @@ export interface AppSettings {
   carryOverCutoffDay: number; // 1–31 (e.g. 31)
   retentionYears: number; // record retention (operator confirms with advisor)
   auRequiredFromDay: number; // AU/eAU required from day N of sickness
-  rounding: { enabled: boolean; incrementMinutes: number };
   ruleProfile: RuleProfile;
   minorRuleProfile: RuleProfile; // JArbSchG (stricter, for under-18s)
   breakPolicy: BreakPolicy; // Pausenautomatik
@@ -96,7 +100,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   carryOverCutoffDay: 31,
   retentionYears: 4, // ArbZG/MiLoG ≥2y, social-insurance audits ≈4y → 4 is safer
   auRequiredFromDay: 4, // EFZG §5 default; employer may require earlier
-  rounding: { enabled: false, incrementMinutes: 0 },
   ruleProfile: {
     capMode: "DAILY",
     maxHoursPerDay: 10,
@@ -137,7 +140,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     lockAfterDays: 0,
     autoLockOnMonthExport: true,
   },
-  punchPolicy: { recordDeviceType: false },
+  punchPolicy: { recordDeviceType: false, reviewRemoteOvertimeMinutes: 60 },
 };
 
 type SettingKey = keyof AppSettings;
@@ -151,6 +154,8 @@ export async function getAppSettings(): Promise<AppSettings> {
   const result: AppSettings = structuredClone(DEFAULT_SETTINGS);
   const mutable = result as unknown as Record<string, unknown>;
   for (const row of rows) {
+    // Rows for keys no longer in AppSettings (e.g. the removed "rounding")
+    // are ignored.
     if (row.key in result) {
       // Trust seeded/admin-written shapes, but lay object values over their
       // defaults so a field added in a later release is never undefined on an

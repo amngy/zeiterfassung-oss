@@ -46,6 +46,9 @@ export default async function AdminEmployeeDetailPage({
   if (!user) notFound();
 
   const todayKey = berlinDayKey(new Date());
+  // Schedules arrive newest first, so the first one already in force is the one
+  // that applies today; every older row only covers its own past period.
+  const currentScheduleId = user.schedules.find((s) => s.effectiveFrom <= todayKey)?.id;
   const year = Number(todayKey.slice(0, 4));
   const account = await getVacationAccount(id, year);
 
@@ -118,7 +121,7 @@ export default async function AdminEmployeeDetailPage({
                     <th className="px-4 py-2 font-medium">
                       <span className="inline-flex items-center gap-1">
                         Gültig ab
-                        <InfoHint>{`Datum, ab dem die Zeile gilt. 'aktuell' kennzeichnet bereits in Kraft getretene Einträge ('Gültig ab' heute oder früher); künftig datierte Einträge tragen die Markierung nicht.`}</InfoHint>
+                        <InfoHint>{`Datum, ab dem die Zeile gilt. 'aktuell' kennzeichnet die eine Zeile, die heute gilt: die jüngste mit 'Gültig ab' heute oder früher. Ältere Zeilen gelten für ihren damaligen Zeitraum weiter; künftig datierte greifen erst ab ihrem Datum.`}</InfoHint>
                       </span>
                     </th>
                     <th className="px-4 py-2 font-medium">Verteilung</th>
@@ -132,7 +135,7 @@ export default async function AdminEmployeeDetailPage({
                 </thead>
                 <tbody>
                   {user.schedules.map((s) => {
-                    const inEffect = s.effectiveFrom <= todayKey;
+                    const inEffect = s.id === currentScheduleId;
                     return (
                       <tr key={s.id} className="border-b border-black/[0.04] last:border-0">
                         <td className="whitespace-nowrap px-4 py-2 font-medium text-ink">

@@ -23,11 +23,18 @@ Daten wir warum verarbeiten und welche Rechte Sie haben.
   (Jugendarbeitsschutz), Schwerbehinderung (Zusatzurlaub), Minijob-Status.
 - **Arbeitszeiten:** Beginn, Ende, Pausen, Korrekturen samt Begründung.
 - **Erfassungsweg je Stempelung:** wie ein Beginn oder Ende erfasst wurde
-  (z. B. „Browser“). [Nur falls aktiviert:] zusätzlich der grob erkannte
+  (z. B. „Browser“ oder „QR-Code“ am Terminal, dann mit dessen Bezeichnung wie
+  „Eingang“). [Nur falls aktiviert:] zusätzlich der grob erkannte
   Gerätetyp (z. B. „iPhone · Safari“), damit sich prüfen lässt, ob eine
   Stempelung plausibel ist — etwa ob ein Arbeitsende am Arbeitsplatz oder auf
   einem Mobilgerät erfasst wurde. Es wird **keine** eindeutige Gerätekennung
   und **kein** Standort gespeichert.
+- **Prüfhinweis:** Endet ein Arbeitstag mit einem Ausstempeln über den
+  Webzugang und liegt er deutlich über der Sollzeit (Voreinstellung: mehr als
+  60 Minuten), wird der Tag der Verwaltung zur Prüfung angezeigt. Dafür werden
+  keine zusätzlichen Daten erhoben, nur die ohnehin gespeicherten Zeiten
+  ausgewertet. An den Zeiten ändert sich nichts. Sie sehen in Ihren Zeiten, ob
+  ein Tag „in Prüfung“ oder „geprüft“ ist.
 - **Abwesenheiten:** Urlaub und Krankheitstage. Bei Krankheit wird lediglich
   vermerkt, **ob** eine AU-Bescheinigung vorliegt — **keine** Diagnosen oder
   Gesundheitsdetails. Außerdem, soweit beantragt oder eingetragen:
@@ -56,8 +63,9 @@ Lohnabrechnung erforderlich ist.
 ## Wie lange werden die Daten gespeichert?
 
 So lange, wie gesetzliche Aufbewahrungsfristen es verlangen (Arbeitszeitnachweise
-≥ 2 Jahre; sozialversicherungs-/lohnsteuerrechtlich teils länger). Danach werden
-die Daten anonymisiert oder gelöscht. Der Gerätetyp einer Stempelung wird
+≥ 2 Jahre; sozialversicherungs-/lohnsteuerrechtlich teils länger), gerechnet ab
+Ende des Kalenderjahres. Danach werden die Daten gelöscht; das Konto
+ausgeschiedener Beschäftigter wird anonymisiert. Der Gerätetyp einer Stempelung wird
 [spätestens] bei der Anonymisierung entfernt.
 
 ## Ihre Rechte

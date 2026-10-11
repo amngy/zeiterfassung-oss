@@ -43,6 +43,8 @@ export interface CorrectableAbsence {
   halfDayStart: boolean;
   halfDayEnd: boolean;
   sickNoteOnFile: boolean;
+  /** Sick spell past the configured AU day without a certificate on file. */
+  sickNoteDue: boolean;
   creditedBackFromVacation: boolean;
   workingDaysCount: number;
   status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
@@ -141,6 +143,7 @@ export function AbsenceCorrectionPanel({
                       {formatDays(a.workingDaysCount)} Tage
                     </Badge>
                     <Badge tone={s.tone}>{s.label}</Badge>
+                    {a.sickNoteDue && <Badge tone="warning">AU fällig</Badge>}
                     {isLive(a) && (
                       <button
                         type="button"

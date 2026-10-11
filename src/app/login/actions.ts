@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
+import { safeInternalPath } from "@/lib/safe-redirect";
 
 export interface LoginState {
   error?: string;
@@ -33,7 +34,8 @@ export async function authenticate(
     await makeSessionCookieEphemeral();
   }
 
-  redirect("/dashboard");
+  // Re-validated here: the hidden field is client input.
+  redirect(safeInternalPath(formData.get("next")) ?? "/dashboard");
 }
 
 async function makeSessionCookieEphemeral(): Promise<void> {

@@ -8,7 +8,6 @@ import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/db";
 import {
   generalSettingsSchema,
-  roundingSchema,
   ruleProfileSchema,
   breakPolicySchema,
   correctionPolicySchema,
@@ -84,24 +83,6 @@ export async function saveGeneralAction(
   });
   refresh();
   return { section: "general", ok: true, message: "Allgemeine Einstellungen gespeichert." };
-}
-
-export async function saveRoundingAction(
-  _prev: SettingsState | undefined,
-  formData: FormData,
-): Promise<SettingsState> {
-  const admin = await requireAdmin();
-  const parsed = roundingSchema.safeParse({
-    enabled: formData.get("enabled") === "on",
-    incrementMinutes: num(formData, "incrementMinutes"),
-  });
-  if (!parsed.success) return { section: "rounding", error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe." };
-  await prisma.$transaction(async (tx) => {
-    await setSetting("rounding", parsed.data, tx);
-    await audit(tx, admin.id, "settings.rounding", parsed.data);
-  });
-  refresh();
-  return { section: "rounding", ok: true, message: "Rundungsregel gespeichert." };
 }
 
 function readRuleProfile(formData: FormData) {
@@ -195,6 +176,7 @@ export async function savePunchPolicyAction(
   const admin = await requireAdmin();
   const parsed = punchPolicySchema.safeParse({
     recordDeviceType: formData.get("recordDeviceType") === "on",
+    reviewRemoteOvertimeMinutes: num(formData, "reviewRemoteOvertimeMinutes"),
   });
   if (!parsed.success) return { section: "punchPolicy", error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe." };
   await prisma.$transaction(async (tx) => {
