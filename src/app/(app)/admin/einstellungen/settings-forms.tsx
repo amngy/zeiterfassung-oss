@@ -115,9 +115,9 @@ export function GeneralForm({ s }: { s: AppSettings }) {
           htmlFor="g-ret"
           required
           hint="ArbZG/MiLoG ≥ 2, Sozialvers. ≈ 4"
-          info={`Geplante Aufbewahrungsdauer der Zeitdaten (keine automatische Löschung). Richtwerte: ArbZG/MiLoG ≥ 2 Jahre, Sozialversicherung ≈ 4, Lohnunterlagen bis ~10 – mit Berater:in abstimmen.`}
+          info={`Wie lange Zeiten, Abwesenheiten, Anträge und Protokoll aufbewahrt werden, gerechnet ab Ende des Kalenderjahres. Gelöscht wird nicht automatisch, sondern unter Verwaltung → Aufbewahrung nach Bestätigung. Richtwerte: ArbZG/MiLoG ≥ 2 Jahre, Sozialversicherung ≈ 4, Lohnunterlagen bis ~10 – mit Berater:in abstimmen.`}
         >
-          <Input id="g-ret" name="retentionYears" type="number" min={1} max={30} defaultValue={s.retentionYears} />
+          <Input id="g-ret" name="retentionYears" type="number" min={2} max={30} defaultValue={s.retentionYears} />
         </Field>
         <Field
           label="AU-Pflicht ab Tag"
