@@ -18,6 +18,8 @@ import {
   eachDayKey,
   formatDayKey,
   formatDays,
+  sickNoteDue,
+  sickNoteDueKey,
   monthRangeOf,
 } from "@/lib/time";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +95,19 @@ export default async function AdminAbsencesPage({
   const correctableRows = (
     await Promise.all(employeeRows.map((u) => getAbsencesForYear(u.id, year)))
   ).flat();
+  const dueSickNotes = correctableRows.filter(
+    (a) =>
+      a.type === "SICK" &&
+      (a.status === "APPROVED" || a.status === "PENDING") &&
+      sickNoteDue(
+        { fromKey: fmtKey(a.startDate), toKey: fmtKey(a.endDate), sickNoteOnFile: a.sickNoteOnFile },
+        settings.auRequiredFromDay,
+        todayKey,
+      ),
+  );
+  const dueIds = new Set(dueSickNotes.map((a) => a.id));
+  const nameOf = new Map(employeeRows.map((u) => [u.id, u.name]));
+
   const correctable: CorrectableAbsence[] = correctableRows.map((a) => ({
     id: a.id,
     userId: a.userId,
@@ -102,6 +117,7 @@ export default async function AdminAbsencesPage({
     halfDayStart: a.halfDayStart,
     halfDayEnd: a.halfDayEnd,
     sickNoteOnFile: a.sickNoteOnFile,
+    sickNoteDue: dueIds.has(a.id),
     creditedBackFromVacation: a.creditedBackFromVacation,
     workingDaysCount: a.workingDaysCount,
     status: a.status,
@@ -206,6 +222,36 @@ export default async function AdminAbsencesPage({
           )}
         </CardContent>
       </Card>
+
+      {/* ── Sick notes due (EFZG §5, setting "AU-Pflicht ab Tag") ─────────── */}
+      {dueSickNotes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex flex-wrap items-center gap-1.5 text-base">
+              AU-Bescheinigung fällig <Badge tone="warning">{dueSickNotes.length}</Badge>
+              <InfoHint>{`Krankmeldungen, die den ${settings.auRequiredFromDay}. Krankheitstag erreicht haben und für die noch keine AU/eAU vermerkt ist (Einstellung „AU-Pflicht ab Tag“, EFZG §5). Bei gesetzlich Versicherten die eAU bei der Krankenkasse abrufen; danach unter „Abwesenheit nachträglich korrigieren“ „AU-Bescheinigung liegt vor“ setzen.`}</InfoHint>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {dueSickNotes.map((a) => {
+                const fromKey = fmtKey(a.startDate);
+                const toKey = fmtKey(a.endDate);
+                const dueKey = sickNoteDueKey({ fromKey, toKey, sickNoteOnFile: false }, settings.auRequiredFromDay);
+                return (
+                  <li key={a.id} className="rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm">
+                    <p className="font-medium text-ink">{nameOf.get(a.userId) ?? "—"}</p>
+                    <p className="text-muted">
+                      Krank {formatDayKey(fromKey)} – {formatDayKey(toKey)}
+                      {dueKey && ` · fällig seit ${formatDayKey(dueKey)}`}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── §9 sick-during-vacation review queue ──────────────────────────── */}
       {candidates.length > 0 && (
