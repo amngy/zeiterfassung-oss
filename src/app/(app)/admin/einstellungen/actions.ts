@@ -176,6 +176,7 @@ export async function savePunchPolicyAction(
   const admin = await requireAdmin();
   const parsed = punchPolicySchema.safeParse({
     recordDeviceType: formData.get("recordDeviceType") === "on",
+    reviewRemoteOvertimeMinutes: num(formData, "reviewRemoteOvertimeMinutes"),
   });
   if (!parsed.success) return { section: "punchPolicy", error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe." };
   await prisma.$transaction(async (tx) => {

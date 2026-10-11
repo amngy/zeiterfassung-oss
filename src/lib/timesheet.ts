@@ -300,6 +300,26 @@ function iso(t: Date): string {
   ).padStart(2, "0")}`;
 }
 
+/** Day-by-day summary over [fromKey, toKey]; no violation checks, no navigation. */
+export async function getPeriodSummary(
+  userId: string,
+  fromKey: string,
+  toKey: string,
+  asOf: Date,
+): Promise<PeriodSummary> {
+  const [schedules, entries, ctx] = await Promise.all([
+    loadSchedules(userId),
+    loadEntries(userId, berlinDayRange(fromKey).start, berlinDayRange(toKey).end),
+    loadRuleContext(userId, asOf, fromKey, toKey),
+  ]);
+  return summarizePeriod(fromKey, toKey, entries, schedules, {
+    asOf,
+    holidays: ctx.holidays,
+    autoBreak: ctx.autoBreak,
+    absences: ctx.absences,
+  });
+}
+
 /** A timesheet for the chosen view/anchor, with prev/next navigation anchors. */
 export async function getTimesheet(
   userId: string,

@@ -61,6 +61,11 @@ export interface BreakPolicy {
  */
 export interface PunchPolicy {
   recordDeviceType: boolean;
+  /**
+   * A day closed by a remote (web) clock-out that ends more than this many
+   * minutes over its Soll is shown to admins for review (#32). 0 = off.
+   */
+  reviewRemoteOvertimeMinutes: number;
 }
 
 export interface CorrectionPolicy {
@@ -135,7 +140,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     lockAfterDays: 0,
     autoLockOnMonthExport: true,
   },
-  punchPolicy: { recordDeviceType: false },
+  punchPolicy: { recordDeviceType: false, reviewRemoteOvertimeMinutes: 60 },
 };
 
 type SettingKey = keyof AppSettings;

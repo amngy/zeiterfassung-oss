@@ -114,9 +114,9 @@ export function GeneralForm({ s }: { s: AppSettings }) {
           htmlFor="g-ret"
           required
           hint="ArbZG/MiLoG ≥ 2, Sozialvers. ≈ 4"
-          info={`Geplante Aufbewahrungsdauer der Zeitdaten (keine automatische Löschung). Richtwerte: ArbZG/MiLoG ≥ 2 Jahre, Sozialversicherung ≈ 4, Lohnunterlagen bis ~10 – mit Berater:in abstimmen.`}
+          info={`Wie lange Zeiten, Abwesenheiten, Anträge und Protokoll aufbewahrt werden, gerechnet ab Ende des Kalenderjahres. Gelöscht wird nicht automatisch, sondern unter Verwaltung → Aufbewahrung nach Bestätigung. Richtwerte: ArbZG/MiLoG ≥ 2 Jahre, Sozialversicherung ≈ 4, Lohnunterlagen bis ~10 – mit Berater:in abstimmen.`}
         >
-          <Input id="g-ret" name="retentionYears" type="number" min={1} max={30} defaultValue={s.retentionYears} />
+          <Input id="g-ret" name="retentionYears" type="number" min={2} max={30} defaultValue={s.retentionYears} />
         </Field>
         <Field
           label="AU-Pflicht ab Tag"
@@ -138,83 +138,86 @@ export function GeneralForm({ s }: { s: AppSettings }) {
   );
 }
 
-function RuleProfileFields({ p }: { p: RuleProfile }) {
+// Rendered twice on one page (standard and JArbSchG profile), so every id is
+// prefixed per form — otherwise a label in the second form focuses the first.
+function RuleProfileFields({ p, idPrefix }: { p: RuleProfile; idPrefix: string }) {
+  const id = (name: string) => `${idPrefix}-${name}`;
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
           label="Begrenzungsmodus"
-          htmlFor="rp-cap"
+          htmlFor={id("cap")}
           info={`Tagesmodus prüft die tägliche Höchstarbeitszeit (ArbZG aktuell). Wochenmodus prüft stattdessen die Wochenobergrenze je Kalenderwoche – vorbereitet für die erwartete ArbZG-Reform 2026.`}
         >
-          <Select id="rp-cap" name="capMode" defaultValue={p.capMode}>
+          <Select id={id("cap")} name="capMode" defaultValue={p.capMode}>
             <option value="DAILY">Täglich (ArbZG aktuell)</option>
             <option value="WEEKLY">Wöchentlich (Reform 2026)</option>
           </Select>
         </Field>
         <Field
           label="Max. Stunden / Woche"
-          htmlFor="rp-mw"
+          htmlFor={id("mw")}
           hint="für Wochenmodus"
           info={`Wöchentliche Höchstarbeitszeit – wirkt nur im Wochenmodus. Orientierung ArbZG: rund 48 Std./Woche im 6-Monats-Durchschnitt.`}
         >
-          <Input id="rp-mw" name="maxHoursPerWeek" type="number" step="0.5" min={1} max={80} defaultValue={p.maxHoursPerWeek} />
+          <Input id={id("mw")} name="maxHoursPerWeek" type="number" step="0.5" min={1} max={80} defaultValue={p.maxHoursPerWeek} />
         </Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
           label="Max. Stunden / Tag"
-          htmlFor="rp-md"
+          htmlFor={id("md")}
           info={`Tägliche Höchstarbeitszeit – wirkt im Tagesmodus. ArbZG §3: grundsätzlich 8 Std., ausnahmsweise bis 10 Std. bei Ausgleich im Durchschnitt.`}
         >
-          <Input id="rp-md" name="maxHoursPerDay" type="number" step="0.5" min={1} max={24} defaultValue={p.maxHoursPerDay} />
+          <Input id={id("md")} name="maxHoursPerDay" type="number" step="0.5" min={1} max={24} defaultValue={p.maxHoursPerDay} />
         </Field>
         <Field
           label="Standardstunden / Tag"
-          htmlFor="rp-sd"
+          htmlFor={id("sd")}
           hint="Mittelungsziel"
           info={`Als Mittelungs-/Sollwert gedacht, fließt aber nicht in die Berechnungen ein (nur Plausibilitätsprüfung: darf das Tagesmaximum nicht überschreiten). Der Soll je Person ergibt sich aus dem Arbeitszeitplan.`}
         >
-          <Input id="rp-sd" name="standardHoursPerDay" type="number" step="0.5" min={1} max={24} defaultValue={p.standardHoursPerDay} />
+          <Input id={id("sd")} name="standardHoursPerDay" type="number" step="0.5" min={1} max={24} defaultValue={p.standardHoursPerDay} />
         </Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-4">
         <Field
           label="Pause 1 ab (Std)"
-          htmlFor="rp-b1a"
+          htmlFor={id("b1a")}
           info={`Arbeitsdauer, ab der die erste Pausenpflicht greift. ArbZG §4: bei mehr als 6 Std. mind. 30 Min. Pause.`}
         >
-          <Input id="rp-b1a" name="break1AfterHours" type="number" step="0.5" min={0} max={24} defaultValue={p.break1AfterHours} />
+          <Input id={id("b1a")} name="break1AfterHours" type="number" step="0.5" min={0} max={24} defaultValue={p.break1AfterHours} />
         </Field>
         <Field
           label="… Minuten"
-          htmlFor="rp-b1m"
+          htmlFor={id("b1m")}
           info={`Mindestpause in Minuten oberhalb der ersten Schwelle. ArbZG §4 fordert hier mind. 30 Min.`}
         >
-          <Input id="rp-b1m" name="break1Minutes" type="number" min={0} max={240} defaultValue={p.break1Minutes} />
+          <Input id={id("b1m")} name="break1Minutes" type="number" min={0} max={240} defaultValue={p.break1Minutes} />
         </Field>
         <Field
           label="Pause 2 ab (Std)"
-          htmlFor="rp-b2a"
+          htmlFor={id("b2a")}
           info={`Arbeitsdauer, ab der die höhere Pausenstufe gilt. ArbZG §4: bei mehr als 9 Std. mind. 45 Min. Pause. Muss über der ersten Schwelle liegen.`}
         >
-          <Input id="rp-b2a" name="break2AfterHours" type="number" step="0.5" min={0} max={24} defaultValue={p.break2AfterHours} />
+          <Input id={id("b2a")} name="break2AfterHours" type="number" step="0.5" min={0} max={24} defaultValue={p.break2AfterHours} />
         </Field>
         <Field
           label="… Minuten"
-          htmlFor="rp-b2m"
+          htmlFor={id("b2m")}
           info={`Mindestpause in Minuten oberhalb der zweiten Schwelle. ArbZG §4 fordert hier mind. 45 Min.`}
         >
-          <Input id="rp-b2m" name="break2Minutes" type="number" min={0} max={240} defaultValue={p.break2Minutes} />
+          <Input id={id("b2m")} name="break2Minutes" type="number" min={0} max={240} defaultValue={p.break2Minutes} />
         </Field>
       </div>
       <Field
         label="Mindestruhezeit (Std)"
-        htmlFor="rp-rest"
+        htmlFor={id("rest")}
         className="max-w-xs"
         info={`Mindestruhe zwischen Arbeitsende und dem Beginn des nächsten Arbeitstags. ArbZG §5: grundsätzlich mind. 11 Std. ununterbrochen.`}
       >
-        <Input id="rp-rest" name="minRestHours" type="number" step="0.5" min={0} max={24} defaultValue={p.minRestHours} />
+        <Input id={id("rest")} name="minRestHours" type="number" step="0.5" min={0} max={24} defaultValue={p.minRestHours} />
       </Field>
       <Check2
         name="blockOnViolation"
@@ -233,7 +236,7 @@ export function RuleProfileForm({ p, minor }: { p: RuleProfile; minor?: boolean 
   );
   return (
     <form action={action} className="space-y-4">
-      <RuleProfileFields p={p} />
+      <RuleProfileFields p={p} idPrefix={minor ? "rp-minor" : "rp"} />
       <Banner state={state} />
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>
@@ -341,6 +344,14 @@ export function PunchPolicyForm({ s }: { s: AppSettings }) {
         defaultChecked={s.punchPolicy.recordDeviceType}
         info={`Speichert zu jeder Stempelung den grob erkannten Gerätetyp, z. B. „iPhone · Safari“ oder „Windows · Edge“ — ohne Version, ohne Gerätekennung, ohne Standort. So wird sichtbar, ob z. B. ein spätes Ausstempeln vom Handy statt vom Büro-PC kam. Der Wert stammt aus der Browserkennung und ist ein Hinweis, kein Beweis. Weil die Angabe geeignet ist, Verhalten zu überwachen, besteht ein Mitbestimmungsrecht des Betriebsrats (§87 Abs. 1 Nr. 6 BetrVG); die Beschäftigten sind vorab zu informieren (Art. 13 DSGVO). Ausgeschaltet wird nur der Erfassungsweg (z. B. „Browser“) gespeichert. Gilt ab dem Speichern für neue Stempelungen.`}
       />
+      <Field
+        label="Prüfhinweis bei Mehrarbeit über den Webzugang (Minuten)"
+        htmlFor="pp-review"
+        hint="0 = aus"
+        info={`Endet ein Arbeitstag mit einem Ausstempeln über den Webzugang (also von überall möglich, nicht am Terminal) und liegt der Tag mehr als diese Minuten über dem Soll, erscheint er unter Verwaltung → Korrekturen zur Prüfung. Es wird nichts gesperrt oder geändert; die Verwaltung markiert den Tag als „geprüft“ (protokolliert), die Person sieht in ihren Zeiten „in Prüfung“ bzw. „geprüft“. Ausgewertet werden nur ohnehin gespeicherte Zeiten. Als Verhaltenskontrolle mitbestimmungspflichtig (§87 Abs. 1 Nr. 6 BetrVG); die Beschäftigten sind zu informieren (Art. 13 DSGVO).`}
+      >
+        <Input id="pp-review" name="reviewRemoteOvertimeMinutes" type="number" min={0} max={600} step={1} defaultValue={s.punchPolicy.reviewRemoteOvertimeMinutes} className="max-w-xs" />
+      </Field>
       <Banner state={state} />
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>

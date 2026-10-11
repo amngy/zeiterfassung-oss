@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireActiveUser } from "@/lib/session";
 import { decideCorrection, CorrectionError } from "@/lib/corrections";
+import { markRemoteReviewed, PunchReviewError } from "@/lib/punch-review";
 
 export interface DecisionState {
   ok?: boolean;
@@ -40,4 +41,21 @@ export async function decideCorrectionAction(
   revalidatePath("/zeiten");
   revalidatePath("/dashboard");
   return { ok: true };
+}
+
+/** Admin marks a flagged remote clock-out as reviewed (#32). */
+export async function markPunchReviewedAction(formData: FormData): Promise<void> {
+  const admin = await requireActiveUser();
+  if (admin.role !== "ADMIN") return;
+  const eventId = String(formData.get("eventId") ?? "");
+  if (!eventId) return;
+  try {
+    await markRemoteReviewed(eventId, admin.id);
+  } catch (e) {
+    // Already reviewed (e.g. in another tab) or gone: the refreshed list says so.
+    if (!(e instanceof PunchReviewError)) throw e;
+  }
+  revalidatePath("/admin/korrekturen");
+  revalidatePath("/admin/zeiten");
+  revalidatePath("/zeiten");
 }
