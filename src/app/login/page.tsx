@@ -2,11 +2,18 @@ import type { Metadata } from "next";
 import { ShieldCheck, Clock3, CalendarDays } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { BRAND } from "@/config/brand";
+import { safeInternalPath } from "@/lib/safe-redirect";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Anmelden" };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  // Back to the page that sent them here (e.g. a scanned terminal code).
+  const next = safeInternalPath((await searchParams).callbackUrl);
   return (
     <main className="grid min-h-dvh lg:grid-cols-2">
       {/* Brand panel — hidden on small screens */}
@@ -70,7 +77,7 @@ export default function LoginPage() {
             Melden Sie sich mit Ihrer geschäftlichen E-Mail-Adresse an.
           </p>
 
-          <LoginForm />
+          <LoginForm next={next} />
 
           <p className="mt-6 text-center text-xs text-muted">
             Probleme bei der Anmeldung? Bitte wenden Sie sich an Ihre
