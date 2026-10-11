@@ -1,0 +1,26 @@
+# Local development database only. Production uses Railway's managed Postgres.
+# Start with:  docker compose -f docker-compose.dev.yml up -d
+# The credentials here match the DATABASE_URL in .env.example.
+services:
+  db:
+    image: postgres:16
+    container_name: zeiterfassung-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zeit
+      POSTGRES_PASSWORD: zeit
+      POSTGRES_DB: zeiterfassung
+      # Force UTF-8 so German characters (ä, ö, ü, ß, ı) are stored correctly.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - zeit_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zeit -d zeiterfassung"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  zeit_pgdata:

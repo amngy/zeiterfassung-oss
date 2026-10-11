@@ -1,0 +1,374 @@
+// Zeiterfassung — data model
+//
+// Design principles baked into this schema:
+//  - TimeEntry is NEVER updated in place. A correction creates a NEW row that
+//    `supersedes` the original; the original is marked SUPERSEDED, never deleted.
+//  - AuditLog is append-only and intentionally has NO foreign keys, so audit
+//    history survives user anonymisation/erasure (DSGVO Art. 17 vs. retention).
+//  - Pure date fields use @db.Date; instants (clock punches) use DateTime.
+//
+// Pinned to Prisma 6 (classic `prisma-client-js` generator) for stability and
+// documentation maturity — see README.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  ADMIN
+}
+
+enum EntryType {
+  WORK
+  BREAK
+}
+
+enum EntrySource {
+  CLOCK
+  MANUAL
+}
+
+enum EntryStatus {
+  ACTIVE
+  SUPERSEDED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  // Withdrawn AFTER the fact by an administrator (Absence only). Distinct from
+  // REJECTED, which means the request was never granted: a cancelled row was
+  // once in force, so the audit trail has to keep the two apart.
+  CANCELLED
+}
+
+enum AbsenceType {
+  VACATION
+  SICK
+}
+
+enum HolidayType {
+  PUBLIC // gesetzlicher Feiertag
+  GIFTED // Sonderfrei / firmenfrei (e.g. Rosenmontag, Heiligabend)
+}
+
+enum HolidayFraction {
+  FULL
+  HALF
+}
+
+enum HolidaySource {
+  SEEDED
+  MANUAL
+}
+
+model User {
+  id           String @id @default(cuid())
+  name         String
+  email        String @unique
+  passwordHash String
+
+  role   Role    @default(EMPLOYEE)
+  active Boolean @default(true)
+
+  // Vacation (current-year values; usage is computed from Absences).
+  //
+  // `vacationDaysPerYear` is the LEGACY lumped figure. It stays authoritative
+  // for rows that have not been split yet, so existing data keeps its exact
+  // total. The two nullable columns below hold the split the law actually needs:
+  //   statutoryVacationDays  — gesetzlicher Mindesturlaub (BUrlG §3). Pro-rated
+  //                            only in the §5(1) cases; §13 makes any reduction
+  //                            below the floor void.
+  //   additionalVacationDays — zusätzliche vertragliche Tage. Freely pro-ratable
+  //                            and freely forfeitable if the contract says so.
+  // Both null → fall back to splitting `vacationDaysPerYear` on read.
+  vacationDaysPerYear     Float     @default(28)
+  statutoryVacationDays   Float?
+  additionalVacationDays  Float?
+  vacationCarryOverDays   Float     @default(0)
+  // Records that the statutory "take your leave" reminder was sent (BUrlG/EuGH).
+  carryOverReminderSentAt DateTime?
+
+  // Public-holiday region; null → company default (Setting "defaultBundesland").
+  bundesland String?
+
+  // Status flags with effective dates (drive stricter rule/vacation profiles).
+  birthDate               DateTime? @db.Date // derive minor status (JArbSchG)
+  isSchwerbehindert       Boolean   @default(false)
+  schwerbehindertFrom     DateTime? @db.Date
+  schwerbehindertTo       DateTime? @db.Date
+  isMinijob               Boolean   @default(false) // MiLoG §17 7-day window
+  exemptFromTimeRecording Boolean   @default(false) // leitende Angestellte §5(3) BetrVG
+  // Takes this person out of the Pausenautomatik's §4 top-up. For contracts
+  // whose daily target is at or below the six-hour threshold: an occasional
+  // overrun would otherwise cost them the automatic 30 minutes even though no
+  // break was owed for the hours they are actually paid for. A break that was
+  // STARTED and never ended is still settled — that break really happened.
+  exemptFromAutoBreak     Boolean   @default(false)
+
+  employmentStart DateTime? @db.Date // Wartezeit & Zwölftelung
+  employmentEnd   DateTime? @db.Date
+
+  // Login throttling / lockout (security hardening).
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
+  // Anonymisation marker (DSGVO Art. 17 after retention period).
+  anonymizedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedules      WorkSchedule[]
+  timeEntries    TimeEntry[]
+  absences       Absence[]
+  corrections    CorrectionRequest[]
+  vacationYears  VacationYear[]
+
+  @@index([active])
+}
+
+// Per-weekday contracted hours, effective-dated so past periods are not
+// silently recomputed when a schedule changes. Weekly target = sum of days.
+model WorkSchedule {
+  id            String   @id @default(cuid())
+  userId        String
+  effectiveFrom DateTime @db.Date
+
+  hoursMon Float @default(0)
+  hoursTue Float @default(0)
+  hoursWed Float @default(0)
+  hoursThu Float @default(0)
+  hoursFri Float @default(0)
+  hoursSat Float @default(0)
+  hoursSun Float @default(0)
+
+  note      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, effectiveFrom])
+}
+
+// Versioned, immutable working-time record. Corrections create a new row.
+model TimeEntry {
+  id     String      @id @default(cuid())
+  userId String
+  type   EntryType
+  start  DateTime
+  end    DateTime?
+  source EntrySource @default(CLOCK)
+  status EntryStatus @default(ACTIVE)
+
+  // Correction chain: this row supersedes `supersedesId` (the previous version).
+  supersedesId String?    @unique
+  supersedes   TimeEntry? @relation("EntryVersion", fields: [supersedesId], references: [id])
+  supersededBy TimeEntry? @relation("EntryVersion")
+
+  note        String?
+  createdById String? // who recorded/corrected it (loose ref, survives anonymise)
+  // Groups rows written by one admin batch backfill, so a mistaken import can be
+  // identified and reversed as a unit. Null for normal clock/correction entries.
+  batchId     String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, start])
+  @@index([userId, status])
+  @@index([batchId])
+}
+
+// Employee or admin request to create/change a record. Approval-gated.
+model CorrectionRequest {
+  id            String     @id @default(cuid())
+  userId        String // subject employee
+  timeEntryId   String? // null → request to create a brand-new entry
+  proposedType  EntryType?
+  proposedStart DateTime?
+  proposedEnd   DateTime?
+  reason        String
+
+  // Break declaration accompanying a WORK correction (§4 ArbZG).
+  //
+  // Employees must state whether a break was taken — a corrected shift that
+  // says nothing about breaks is not a complete record, and the rule check
+  // would otherwise read the silence as "no break" without anyone having said
+  // so. Tri-state on purpose:
+  //   true  → a break was taken; proposedBreakStart/End hold it
+  //   false → explicitly declared: no break
+  //   null  → not declared (admin corrections, and every pre-existing row)
+  breakDeclared      Boolean?
+  proposedBreakStart DateTime?
+  proposedBreakEnd   DateTime?
+
+  status        RequestStatus @default(PENDING)
+  requestedById String
+  decidedById   String?
+  decidedAt     DateTime?
+  decisionNote  String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status])
+}
+
+model Absence {
+  id        String      @id @default(cuid())
+  userId    String
+  type      AbsenceType
+  startDate DateTime    @db.Date
+  endDate   DateTime    @db.Date
+
+  halfDayStart Boolean @default(false)
+  halfDayEnd   Boolean @default(false)
+
+  // Computed at create/approve time from the employee's schedule + holidays.
+  workingDaysCount Float @default(0)
+
+  status                   RequestStatus @default(PENDING)
+  sickNoteOnFile           Boolean       @default(false) // AU/eAU (SICK)
+  creditedBackFromVacation Boolean       @default(false) // §9 BUrlG
+
+  note        String?
+  createdById String?
+  decidedById String?
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  // Retroactive administrative correction (shortened holiday, wrong type, a
+  // spell that turned out to be sickness, …). The absence row itself is edited
+  // in place — unlike TimeEntry it is a decision, not a punch — so these three
+  // fields plus the audit log are what make the change accountable afterwards.
+  correctedById String?
+  correctedAt   DateTime?
+  correctionReason String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startDate])
+  @@index([type, status])
+}
+
+// Public and gifted holidays. Public holidays are SEEDED per year (movable
+// feasts derive from Easter); everything can be overridden MANUALly.
+model Holiday {
+  id                String          @id @default(cuid())
+  date              DateTime        @db.Date
+  name              String
+  type              HolidayType     @default(PUBLIC)
+  fraction          HolidayFraction @default(FULL)
+  bundesland        String? // null → applies to all regions / company-wide gifted
+  municipalityNote  String? // sub-state cases (e.g. Fronleichnam in parts of SN/TH)
+  recurringAnnually Boolean         @default(false) // gifted days that recur
+  source            HolidaySource   @default(SEEDED)
+  createdAt         DateTime        @default(now())
+
+  @@unique([date, name, bundesland])
+  @@index([date])
+}
+
+// Global parameters: default entitlement, carry-over cutoff, retention period,
+// the working-time rule profile, correction/period-lock policy, AU-from day, …
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+// Source-keyed (IP) login throttling — the missing half of brute-force defence.
+//
+// `User.failedLoginAttempts` / `lockedUntil` lock the ACCOUNT, which meant an
+// attacker who knew a colleague's address could keep that person permanently
+// locked out, and aimed at every admin address could lock administration out of
+// production entirely. This table rate-limits the SOURCE first, so the attacker
+// is cut off long before the victim's account is touched. Written via raw SQL in
+// src/lib/auth-throttle.ts; modelled here so `prisma migrate dev` does not see
+// drift and offer to drop the table.
+model LoginThrottle {
+  ip     String
+  /** Empty string = the per-source bucket; a user id = that account's bucket. */
+  userId String @default("")
+
+  failures       Int      @default(0)
+  firstFailureAt DateTime @default(now()) @db.Timestamptz(6)
+  lastFailureAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([ip, userId])
+  @@index([userId, firstFailureAt])
+  @@index([lastFailureAt])
+}
+
+// Per-year snapshot of an employee's leave account.
+//
+// Without this, `User.vacationDaysPerYear` / `vacationCarryOverDays` are single
+// CURRENT-year fields: once the calendar rolls over, looking at last year shows
+// this year's entitlement, and there is no record of what was actually granted
+// or carried. A leave account is a per-year fact and has to be stored as one —
+// both to answer "what did she have in 2026?" after the fact, and to make the
+// year-end rollover reproducible instead of a manual edit.
+//
+// Rows are written by the rollover (prisma/vacation-rollover.ts) or by an admin.
+// A year with no row falls back to the User fields, so existing data keeps
+// working unchanged.
+model VacationYear {
+  id     String @id @default(cuid())
+  userId String
+  year   Int
+
+  /** Gesetzlicher Mindesturlaub for this year (BUrlG §3), after §5 pro-rating. */
+  statutoryDays  Float
+  /** Contractual extra days for this year. */
+  additionalDays Float
+  /** Brought forward from the previous year. */
+  carryOverDays  Float @default(0)
+  /** SGB IX §208 bonus granted for this year. */
+  disabilityBonusDays Float @default(0)
+
+  /** Days that lapsed at the §7(3) cutoff, if forfeiture was lawfully applied. */
+  forfeitedDays Float @default(0)
+  /** Set when the statutory duty-to-warn was discharged for THIS year's leave. */
+  reminderSentAt DateTime?
+
+  /** Why the statutory part was (or was not) pro-rated — a TeilurlaubReason. */
+  teilurlaubReason String?
+  note             String?
+
+  closedAt    DateTime? // set by the rollover once the year is settled
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year])
+  @@index([year])
+}
+
+// Append-only, tamper-evident change history. No FKs (survives anonymisation).
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String // e.g. "timeentry.correct", "absence.approve"
+  targetType  String // e.g. "TimeEntry", "Absence", "User"
+  targetId    String?
+  oldValue    Json?
+  newValue    Json?
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([actorUserId])
+  @@index([createdAt])
+}

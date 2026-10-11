@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    /* Default border color matches the brand surface tone. */
+    border-color: theme("colors.surface");
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-white font-sans text-ink antialiased;
+  }
+
+  /* Consistent, brand-coloured focus ring across all interactive elements. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-teal/40 ring-offset-2 ring-offset-white;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply text-balance;
+  }
+}

@@ -1,0 +1,42 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# testing
+/coverage
+
+# environment — never commit real secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# prisma
+/prisma/*.db
+/prisma/*.db-journal
+
+# logs
+*.log
+npm-debug.log*
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# misc
+*.pem
+/tmp
+*.tsbuildinfo
+
