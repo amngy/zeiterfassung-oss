@@ -106,6 +106,7 @@ function report(days: ReportDayRow[], over: Partial<MonthlyReport> = {}): Monthl
       balanceToDateMs: null,
     },
     violations: [],
+    recordingIssues: [],
     absences: [],
     generatedAtKey: "2026-08-01",
     companyName: "Muster GmbH",

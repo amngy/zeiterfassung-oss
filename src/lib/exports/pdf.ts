@@ -5,7 +5,7 @@
 
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { BRAND } from "@/config/brand";
-import { formatDayKey } from "@/lib/time";
+import { formatDayKey, RECORDING_STATE_LABEL, recordingIssueText } from "@/lib/time";
 import {
   dayHours,
   dayNote,
@@ -358,6 +358,22 @@ export async function monthlyReportPdf(report: MonthlyReport): Promise<Uint8Arra
     for (const v of report.violations) {
       c.ensure(13);
       c.text(`${formatDayKey(v.date)}: ${v.message}`, { size: 8, color: DANGER });
+      c.move(11);
+    }
+    c.move(8);
+  }
+
+  // ── MiLoG §17 (Minijob) ──
+  if (report.recordingIssues.length > 0) {
+    c.ensure(40);
+    c.text("MiLoG §17 – Aufzeichnungsfrist", { bold: true, size: 11, color: TEAL });
+    c.move(15);
+    for (const r of report.recordingIssues) {
+      c.ensure(13);
+      c.text(`${formatDayKey(r.dayKey)}: ${RECORDING_STATE_LABEL[r.state]} · ${recordingIssueText(r)}`, {
+        size: 8,
+        color: DANGER,
+      });
       c.move(11);
     }
     c.move(8);

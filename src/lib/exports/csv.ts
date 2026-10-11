@@ -2,7 +2,7 @@
 // CRLF line endings and a UTF-8 BOM (so Excel detects the encoding and umlauts
 // render). Use `csvBytes()` to get the final downloadable buffer.
 
-import { formatDayKey } from "@/lib/time";
+import { formatDayKey, RECORDING_STATE_LABEL, recordingIssueText } from "@/lib/time";
 import {
   dayHours,
   dayNote,
@@ -151,6 +151,14 @@ export function monthlyReportCsv(report: MonthlyReport): string {
     lines.push(row(["ArbZG-Hinweise"]));
     for (const v of report.violations) {
       lines.push(row([formatDayKey(v.date), v.severity === "BLOCK" ? "Verstoß" : "Hinweis", v.message]));
+    }
+  }
+
+  if (report.recordingIssues.length > 0) {
+    lines.push("");
+    lines.push(row(["MiLoG §17 – Aufzeichnungsfrist"]));
+    for (const r of report.recordingIssues) {
+      lines.push(row([formatDayKey(r.dayKey), RECORDING_STATE_LABEL[r.state], recordingIssueText(r)]));
     }
   }
 

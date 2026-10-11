@@ -148,8 +148,18 @@ Anwendung macht Abweichungen sichtbar und nachweisbar.
 über den vollen Zeitraum von sechs Kalendermonaten bzw. 24 Wochen hinweg: Die
 Anwendung berechnet den Durchschnitt über den jeweils ausgewerteten Zeitraum
 (`checkAveraging`), eine durchgehende Überwachung des gesetzlichen
-Ausgleichszeitraums erfolgt organisatorisch. Ebenso wenig überwacht wird die
-Aufzeichnungsfrist von sieben Tagen nach §17 MiLoG.
+Ausgleichszeitraums erfolgt organisatorisch.
+
+Für Konten mit dem Kennzeichen **Minijob** überwacht die Anwendung die
+Aufzeichnungsfrist nach §17 Abs. 1 MiLoG: Beginn, Ende und Dauer müssen bis zum
+Ablauf des siebten auf den Arbeitstag folgenden Kalendertages aufgezeichnet sein.
+Maßgeblich ist, wann ein Eintrag erstmals mit Beginn und Ende vorlag (beim
+Stempeln der Zeitpunkt des Ausstempelns, sonst der Zeitpunkt der Erfassung); eine
+spätere Korrektur eines rechtzeitig erfassten Eintrags gilt nicht als verspätet.
+Einträge ohne Ende und verspätet vervollständigte Einträge erscheinen unter
+„Korrekturen“, in „Alle Zeiten“ und im Monatsbericht (PDF/CSV). Für die in §2a
+SchwarzArbG genannten Branchen gilt dieselbe Frist; sie werden über dasselbe
+Kennzeichen erfasst.
 
 ## 6. Urlaub und Abwesenheiten
 
