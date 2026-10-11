@@ -20,12 +20,6 @@ export const generalSettingsSchema = z.object({
   auRequiredFromDay: num(1, 14).pipe(z.number().int()),
 });
 
-/** Optional rounding rule for recorded times. */
-export const roundingSchema = z.object({
-  enabled: z.boolean().default(false),
-  incrementMinutes: num(0, 60).pipe(z.number().int()),
-});
-
 /**
  * A working-time rule profile (ArbZG). Kept as data so the pending 2026 reform
  * (e.g. daily→weekly cap) needs no code change. Refinements keep the two break
@@ -79,7 +73,6 @@ export const punchPolicySchema = z.object({
 });
 
 export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;
-export type RoundingInput = z.infer<typeof roundingSchema>;
 export type RuleProfileInput = z.infer<typeof ruleProfileSchema>;
 export type BreakPolicyInput = z.infer<typeof breakPolicySchema>;
 export type CorrectionPolicyInput = z.infer<typeof correctionPolicySchema>;
