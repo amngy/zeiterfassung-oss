@@ -14,6 +14,20 @@ import {
   type EntryEditState,
 } from "./actions";
 
+/** An earlier version of an entry, replaced by a correction — display-ready. */
+export interface EntryHistoryItem {
+  id: string;
+  type: "WORK" | "BREAK";
+  /** "Mo, 06.10.2026, 08:00–16:30" */
+  span: string;
+  source: "CLOCK" | "MANUAL";
+  punches: { edge: "Beginn" | "Ende"; via: string }[];
+  /** When it was replaced, "07.10.2026, 09:12". */
+  changedAt: string;
+  changedBy: string | null;
+  reason: string | null;
+}
+
 export interface EditableEntry {
   id: string;
   userId: string;
@@ -27,6 +41,8 @@ export interface EditableEntry {
   source: "CLOCK" | "MANUAL";
   /** How each punch behind this entry arrived; empty for corrections/backfills. */
   punches: { edge: "Beginn" | "Ende"; via: string }[];
+  /** Earlier versions, newest first; empty if never corrected. */
+  history: EntryHistoryItem[];
   /** Start and end fall on different Berlin days. */
   crossesMidnight: boolean;
   /** Stored start is within the first minute of a Berlin day. */
@@ -87,15 +103,15 @@ export function EntryEditor({ entries }: { entries: EditableEntry[] }) {
       {state.ok && (
         <p className="mb-3 flex items-center gap-2 rounded-lg bg-lime/15 px-3 py-2 text-sm font-medium text-lime-dark">
           <Check className="h-4 w-4" />
-          Zeit geändert. Die vorherige Version bleibt als ersetzter Eintrag erhalten und steht
-          mit Grund im Änderungsprotokoll.
+          Zeit geändert. Die vorherige Version bleibt erhalten: im Verlauf des Eintrags, im
+          Rohdaten-Export mit Versionen und mit Grund im Änderungsprotokoll.
         </p>
       )}
       {rmState.ok && (
         <p className="mb-3 flex items-center gap-2 rounded-lg bg-lime/15 px-3 py-2 text-sm font-medium text-lime-dark">
           <Check className="h-4 w-4" />
           Eintrag aus der Wertung genommen. Er bleibt als ersetzter Eintrag im Rohdaten-Export
-          und im Änderungsprotokoll sichtbar.
+          mit Versionen und im Änderungsprotokoll sichtbar.
         </p>
       )}
       {rmState.error && !rmState.entryId && (
@@ -191,12 +207,37 @@ export function EntryEditor({ entries }: { entries: EditableEntry[] }) {
                   Gestempelt:{" "}
                   {e.punches.map((p) => `${p.edge} über ${p.via}`).join(" — ")}
                 </span>
-                <InfoHint>{`Wie Beginn und Ende erfasst wurden: Erfassungsweg und — falls in den Einstellungen aktiviert — der grob erkannte Gerätetyp. Die Geräteangabe meldet der Browser selbst; sie ist ein Hinweis, kein Beweis. Ein Handy mit der Browser-Option „Desktop-Website“ erscheint z. B. als Mac oder Linux. Nach einer Korrektur steht hier nichts mehr: die korrigierten Zeiten wurden nicht gestempelt. Standortdaten werden nicht erfasst.`}</InfoHint>
+                <InfoHint>{`Wie Beginn und Ende erfasst wurden: Erfassungsweg und — falls in den Einstellungen aktiviert — der grob erkannte Gerätetyp. Die Geräteangabe meldet der Browser selbst; sie ist ein Hinweis, kein Beweis. Ein Handy mit der Browser-Option „Desktop-Website“ erscheint z. B. als Mac oder Linux. Nach einer Korrektur steht hier nichts mehr, denn die korrigierten Zeiten wurden nicht gestempelt; die ursprünglichen Stempelungen zeigt der Verlauf. Standortdaten werden nicht erfasst.`}</InfoHint>
               </p>
             )}
 
             {e.note && (
               <p className="mt-1 pl-[3.75rem] text-xs text-muted">Anmerkung: {e.note}</p>
+            )}
+
+            {e.history.length > 0 && (
+              <details className="mt-1 pl-[3.75rem] text-xs text-muted">
+                <summary className="cursor-pointer select-none font-medium text-teal hover:underline">
+                  Verlauf: {e.history.length === 1 ? "1 frühere Version" : `${e.history.length} frühere Versionen`}
+                </summary>
+                <ol className="mt-1.5 space-y-1.5 border-l border-black/10 pl-3">
+                  {e.history.map((v) => (
+                    <li key={v.id}>
+                      <span className="text-ink">
+                        {v.type === "WORK" ? "Arbeit" : "Pause"} {v.span}
+                      </span>
+                      {" · "}
+                      {v.source === "MANUAL" ? "manuell" : "Stempeluhr"}
+                      {v.punches.length > 0 &&
+                        ` · Gestempelt: ${v.punches.map((p) => `${p.edge} über ${p.via}`).join(" — ")}`}
+                      <br />
+                      Ersetzt am {v.changedAt}
+                      {v.changedBy ? ` von ${v.changedBy}` : ""}
+                      {v.reason ? ` — Grund: ${v.reason}` : ""}
+                    </li>
+                  ))}
+                </ol>
+              </details>
             )}
 
             {isConfirming && (
@@ -209,7 +250,7 @@ export function EntryEditor({ entries }: { entries: EditableEntry[] }) {
                   </strong>{" "}
                   aus der Wertung nehmen? Die Zeit zählt danach nicht mehr in Nachweisen,
                   Saldo und Auswertungen. Gelöscht wird sie nicht: sie bleibt als{" "}
-                  <em>ersetzt</em> im Rohdaten-Export und im Änderungsprotokoll — so verlangt
+                  <em>ersetzt</em> im Rohdaten-Export mit Versionen und im Änderungsprotokoll — so verlangt
                   es die Revisionssicherheit.
                 </p>
 
@@ -312,7 +353,7 @@ export function EntryEditor({ entries }: { entries: EditableEntry[] }) {
                   <Button type="submit" disabled={pending}>
                     Verbindlich ändern
                   </Button>
-                  <InfoHint>{`Wirkt sofort — ohne Antrag und ohne Genehmigung, und auch dann, wenn der Zeitraum für Mitarbeitende bereits gesperrt ist. Der bisherige Eintrag wird nicht gelöscht, sondern als „ersetzt" markiert und bleibt in Rohdaten-Export und Protokoll sichtbar.`}</InfoHint>
+                  <InfoHint>{`Wirkt sofort — ohne Antrag und ohne Genehmigung, und auch dann, wenn der Zeitraum für Mitarbeitende bereits gesperrt ist. Der bisherige Eintrag wird nicht gelöscht, sondern als „ersetzt" markiert und bleibt im Verlauf des Eintrags, im Rohdaten-Export mit Versionen und im Protokoll sichtbar.`}</InfoHint>
                 </div>
               </form>
             )}

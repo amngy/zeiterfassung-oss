@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatInTimeZone } from "date-fns-tz";
-import { ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Database } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Database, History } from "lucide-react";
 import { requireAdmin } from "@/lib/session";
 import { prisma } from "@/lib/db";
-import { describePunch } from "@/lib/clock";
+import { describePunches, loadEntryHistories, PUNCH_SELECT } from "@/lib/entry-history";
 import { getTimesheet } from "@/lib/timesheet";
 import { findRemoteReviewFlags, reviewStateByDay } from "@/lib/punch-review";
 import {
@@ -27,13 +27,24 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { InfoHint } from "@/components/ui/info-hint";
 import { PeriodTotals, TimesheetTable, ViolationList } from "../../zeiten/views";
-import { EntryEditor, type EditableEntry } from "./entry-editor";
+import { EntryEditor, type EditableEntry, type EntryHistoryItem } from "./entry-editor";
 
 export const metadata: Metadata = { title: "Alle Zeiten" };
 
 /** Berlin wall-clock "YYYY-MM-DDTHH:mm" — the format <input datetime-local> wants. */
 function berlinLocal(instant: Date): string {
   return formatInTimeZone(instant, BUSINESS_TZ, "yyyy-MM-dd'T'HH:mm");
+}
+
+/** "Mo, 06.10.2026, 08:00–16:30", with the end date when it is another day. */
+function spanLabel(start: Date, end: Date | null): string {
+  const startKey = berlinDayKey(start);
+  const head = `${formatDayKey(startKey)}, ${formatClock(start)}`;
+  if (!end) return `${head}–offen`;
+  const endKey = berlinDayKey(end);
+  return endKey === startKey
+    ? `${head}–${formatClock(end)}`
+    : `${head} – ${formatDayKey(endKey)}, ${formatClock(end)}`;
 }
 
 /**
@@ -58,13 +69,11 @@ async function loadEditableEntries(
     orderBy: { start: "asc" },
     select: {
       id: true, userId: true, type: true, start: true, end: true,
-      source: true, note: true,
-      clockEvents: {
-        orderBy: { at: "asc" },
-        select: { kind: true, channel: true, deviceLabel: true, terminal: { select: { label: true } } },
-      },
+      source: true, note: true, supersedesId: true,
+      clockEvents: PUNCH_SELECT,
     },
   });
+  const histories = await loadEntryHistories(rows);
 
   return rows.map((r) => {
     const startKey = berlinDayKey(r.start);
@@ -83,10 +92,19 @@ async function loadEditableEntries(
       startsAtMidnight: r.start.getTime() - berlinDayRange(startKey).start.getTime() < 60_000,
       note: r.note,
       source: r.source,
-      punches: r.clockEvents.map((p) => ({
-        edge: p.kind === "CLOCK_IN" || p.kind === "BREAK_START" ? ("Beginn" as const) : ("Ende" as const),
-        via: describePunch(p),
-      })),
+      punches: describePunches(r.clockEvents),
+      history: (histories.get(r.id) ?? []).map(
+        (v): EntryHistoryItem => ({
+          id: v.id,
+          type: v.type,
+          span: spanLabel(v.start, v.end),
+          source: v.source,
+          punches: v.punches,
+          changedAt: formatInTimeZone(v.replaced.at, BUSINESS_TZ, "dd.MM.yyyy, HH:mm"),
+          changedBy: v.replaced.actor,
+          reason: v.replaced.reason,
+        }),
+      ),
       startMs: r.start.getTime(),
       endMs: r.end ? r.end.getTime() : null,
     };
@@ -220,7 +238,13 @@ export default async function AdminTimesheetsPage({
                   href={`/api/admin/export/roh?user=${selectedId}&monat=${monthKey}`}
                   icon={<Database className="h-4 w-4" />}
                   label="Rohdaten-CSV"
-                  info={`Einzelne Stempelungen dieser Person im Monat: Von/Bis je Intervall, Art (Arbeit/Pause), Erfassung (manuell/Stempeluhr) und Status (aktiv/ersetzt) – für Prüfung und Dokumentationspflicht.`}
+                  info={`Einzelne Stempelungen dieser Person im Monat, wie sie aktuell gelten: Von/Bis je Intervall, Art (Arbeit/Pause), Erfassung (manuell/Stempeluhr) – für Prüfung und Dokumentationspflicht.`}
+                />
+                <ExportLink
+                  href={`/api/admin/export/roh?user=${selectedId}&monat=${monthKey}&versionen=1`}
+                  icon={<History className="h-4 w-4" />}
+                  label="Rohdaten mit Versionen"
+                  info={`Wie die Rohdaten-CSV, aber zusätzlich mit allen Fassungen, die durch Korrekturen ersetzt oder aus der Wertung genommen wurden (Status „ersetzt“). Zeigt bei einer Prüfung, was ursprünglich erfasst war; wer wann warum geändert hat, steht im Änderungsprotokoll.`}
                 />
                 <ExportLink
                   href={`/api/admin/export/roh?monat=${monthKey}`}
