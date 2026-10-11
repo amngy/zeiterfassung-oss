@@ -16,7 +16,7 @@ export const generalSettingsSchema = z.object({
   defaultVacationDays: num(0, 365),
   carryOverCutoffMonth: num(1, 12).pipe(z.number().int()),
   carryOverCutoffDay: num(1, 31).pipe(z.number().int()),
-  retentionYears: num(1, 30).pipe(z.number().int()),
+  retentionYears: num(2, 30).pipe(z.number().int()),
   auRequiredFromDay: num(1, 14).pipe(z.number().int()),
 });
 
