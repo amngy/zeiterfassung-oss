@@ -16,6 +16,6 @@ export const config = {
   // deletes the session cookie, which the proxy would re-issue on the same
   // response.
   matcher: [
-    "/((?!api/auth|api/health|_next/static|_next/image|favicon.ico|manifest\.webmanifest$|icon$|apple-icon$|app-icon/|terminal(?:/|$)|sitzung-beendet$|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    "/((?!api/auth|api/health|_next/static|_next/image|favicon.ico|manifest\\.webmanifest$|icon$|apple-icon$|app-icon/|terminal(?:/|$)|sitzung-beendet$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
   ],
 };
