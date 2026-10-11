@@ -4,6 +4,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Database } from "lucide-react";
 import { requireAdmin } from "@/lib/session";
 import { prisma } from "@/lib/db";
+import { describePunch } from "@/lib/clock";
 import { getTimesheet } from "@/lib/timesheet";
 import {
   addDaysToKey,
@@ -57,6 +58,10 @@ async function loadEditableEntries(
     select: {
       id: true, userId: true, type: true, start: true, end: true,
       source: true, note: true,
+      clockEvents: {
+        orderBy: { at: "asc" },
+        select: { kind: true, channel: true, deviceLabel: true },
+      },
     },
   });
 
@@ -77,6 +82,10 @@ async function loadEditableEntries(
       startsAtMidnight: r.start.getTime() - berlinDayRange(startKey).start.getTime() < 60_000,
       note: r.note,
       source: r.source,
+      punches: r.clockEvents.map((p) => ({
+        edge: p.kind === "CLOCK_IN" || p.kind === "BREAK_START" ? ("Beginn" as const) : ("Ende" as const),
+        via: describePunch(p),
+      })),
       startMs: r.start.getTime(),
       endMs: r.end ? r.end.getTime() : null,
     };

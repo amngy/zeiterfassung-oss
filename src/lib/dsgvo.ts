@@ -11,6 +11,7 @@
 //                                 Schwerbehinderung flag/dates → null/false;
 //                                 active → false; anonymizedAt → now
 //   TimeEntry.note                → null  (their rows)
+//   ClockEvent.deviceLabel        → null  (their punches; channel + time stay)
 //   Absence.note                  → null  (their rows — sick notes are Art. 9
 //                                 health data)
 //   CorrectionRequest.reason      → "[anonymisiert]"  (column is NOT NULL)
@@ -58,8 +59,9 @@ export async function exportUserData(userId: string): Promise<unknown> {
   });
   if (!user) throw new UserError("Konto nicht gefunden.");
 
-  const [timeEntries, corrections, absences] = await Promise.all([
+  const [timeEntries, clockEvents, corrections, absences] = await Promise.all([
     prisma.timeEntry.findMany({ where: { userId }, orderBy: { start: "asc" } }),
+    prisma.clockEvent.findMany({ where: { userId }, orderBy: { at: "asc" } }),
     prisma.correctionRequest.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
     prisma.absence.findMany({ where: { userId }, orderBy: { startDate: "asc" } }),
   ]);
@@ -87,6 +89,7 @@ export async function exportUserData(userId: string): Promise<unknown> {
     profile,
     workSchedules: user.schedules,
     timeEntries,
+    clockEvents,
     correctionRequests: corrections,
     absences,
     auditLog,
@@ -201,6 +204,10 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
         where: { userId, OR: [{ note: { not: null } }, { correctionReason: { not: null } }] },
         data: { note: null, correctionReason: null },
       });
+      const deviceLabels = await tx.clockEvent.updateMany({
+        where: { userId, deviceLabel: { not: null } },
+        data: { deviceLabel: null },
+      });
       const scheduleNotes = await tx.workSchedule.updateMany({
         where: { userId, note: { not: null } },
         data: { note: null },
@@ -221,6 +228,7 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
           timeEntryNotesCleared: entryNotes.count,
           absenceNotesCleared: absenceNotes.count,
           workScheduleNotesCleared: scheduleNotes.count,
+          clockDeviceLabelsCleared: deviceLabels.count,
           correctionTextsRedacted: correctionTexts.count,
         },
         reason: "DSGVO Art. 17 — Anonymisierung",

@@ -16,6 +16,7 @@ import {
   type Violation,
 } from "@/lib/time";
 import type { RawEntryRow } from "./csv";
+import { describePunch } from "@/lib/clock";
 
 const HOUR_MS = 3_600_000;
 
@@ -347,10 +348,19 @@ export async function loadRawEntries(
       start: { gte: start, lt: end },
     },
     orderBy: [{ start: "asc" }],
-    include: { user: { select: { name: true } } },
+    include: {
+      user: { select: { name: true } },
+      clockEvents: { select: { kind: true, channel: true, deviceLabel: true } },
+    },
   });
 
   return rows.map((r) => {
+    const via = (opening: boolean): string => {
+      const punch = r.clockEvents.find(
+        (e) => (e.kind === "CLOCK_IN" || e.kind === "BREAK_START") === opening,
+      );
+      return punch ? describePunch(punch) : "";
+    };
     const workedMs = r.end ? r.end.getTime() - r.start.getTime() : 0;
     return {
       employeeName: r.user.name,
@@ -360,6 +370,8 @@ export async function loadRawEntries(
       endClock: r.end ? formatClock(r.end) : "offen",
       workedMs,
       source: r.source,
+      startVia: via(true),
+      endVia: via(false),
       status: r.status,
       note: r.note,
     };

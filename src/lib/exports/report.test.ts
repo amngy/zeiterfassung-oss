@@ -39,6 +39,11 @@ interface FakeEntry {
   status: "ACTIVE" | "SUPERSEDED";
   note: string | null;
   user: { name: string };
+  clockEvents: {
+    kind: "CLOCK_IN" | "CLOCK_OUT" | "BREAK_START" | "BREAK_END";
+    channel: "WEB" | "KIOSK" | "NFC" | "QR";
+    deviceLabel: string | null;
+  }[];
 }
 
 function entry(start: Date, end: Date | null, name: string): FakeEntry {
@@ -50,6 +55,10 @@ function entry(start: Date, end: Date | null, name: string): FakeEntry {
     status: "ACTIVE",
     note: null,
     user: { name },
+    clockEvents: [
+      { kind: "CLOCK_IN", channel: "WEB", deviceLabel: "Windows · Edge" },
+      ...(end ? [{ kind: "CLOCK_OUT" as const, channel: "WEB" as const, deviceLabel: "iPhone · Safari" }] : []),
+    ],
   };
 }
 
@@ -125,6 +134,26 @@ function cells(line: string): string[] {
 }
 
 // ── the raw-entries window is a Berlin month ────────────────────────────────
+
+describe("loadRawEntries — punch channels", () => {
+  beforeEach(() => {
+    findMany.mockReset();
+  });
+
+  it("reports how the start and the end punch arrived, separately", async () => {
+    const start = new Date("2026-07-15T06:00:00Z");
+    serve([entry(start, new Date(start.getTime() + 8 * HOUR_MS), "Anna")]);
+    const [row] = await loadRawEntries("2026-07-01", "2026-07-31");
+    expect(row!.startVia).toBe("Browser · Windows · Edge");
+    expect(row!.endVia).toBe("Browser · iPhone · Safari");
+  });
+
+  it("leaves the end empty while the entry is still open", async () => {
+    serve([entry(new Date("2026-07-15T06:00:00Z"), null, "Anna")]);
+    const [row] = await loadRawEntries("2026-07-01", "2026-07-31");
+    expect(row!.endVia).toBe("");
+  });
+});
 
 describe("loadRawEntries — month window", () => {
   // Braces matter: an arrow returning the mock would be taken for a cleanup hook.

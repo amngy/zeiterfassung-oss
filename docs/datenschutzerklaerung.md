@@ -22,7 +22,9 @@ verarbeitet werden insbesondere:
   Funktion), ggf. Geburtsdatum (zur Anwendung des Jugendarbeitsschutzes) und
   Status der Schwerbehinderung (für den gesetzlichen Zusatzurlaub).
 - Arbeitszeitdaten: Beginn, Ende und Dauer von Arbeits- und Pausenzeiten,
-  Korrekturen und deren Begründungen.
+  Korrekturen und deren Begründungen; je Stempelung der Erfassungsweg
+  (z. B. Browser) und der grob erkannte Gerätetyp (z. B. „iPhone · Safari“) —
+  ohne eindeutige Gerätekennung und ohne Standort.
 - Abwesenheiten: Urlaub und Krankheitszeiten (inkl. Vorliegen einer AU-
   Bescheinigung als Ja/Nein-Kennzeichen — **keine Diagnosedaten**).
 - Protokolldaten zu Änderungen (Wer, Wann, Was, Alt→Neu, Grund).

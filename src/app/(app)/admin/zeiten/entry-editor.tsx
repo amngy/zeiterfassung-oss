@@ -25,6 +25,8 @@ export interface EditableEntry {
   startClock: string;
   endClock: string;
   source: "CLOCK" | "MANUAL";
+  /** How each punch behind this entry arrived; empty for corrections/backfills. */
+  punches: { edge: "Beginn" | "Ende"; via: string }[];
   /** Start and end fall on different Berlin days. */
   crossesMidnight: boolean;
   /** Stored start is within the first minute of a Berlin day. */
@@ -182,6 +184,16 @@ export function EntryEditor({ entries }: { entries: EditableEntry[] }) {
                 </button>
               </span>
             </div>
+
+            {e.punches.length > 0 && (
+              <p className="mt-1 flex items-center gap-1 pl-[3.75rem] text-xs text-muted">
+                <span>
+                  Gestempelt:{" "}
+                  {e.punches.map((p) => `${p.edge} über ${p.via}`).join(" — ")}
+                </span>
+                <InfoHint>{`Wie Beginn und Ende erfasst wurden: Erfassungsweg und grob erkannter Gerätetyp. Die Geräteangabe meldet der Browser selbst und kann verfälscht werden — sie ist ein Hinweis, kein Beweis. Standortdaten werden nicht erfasst.`}</InfoHint>
+              </p>
+            )}
 
             {e.note && (
               <p className="mt-1 pl-[3.75rem] text-xs text-muted">Anmerkung: {e.note}</p>

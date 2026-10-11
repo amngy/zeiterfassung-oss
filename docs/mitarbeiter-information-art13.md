@@ -22,6 +22,10 @@ Daten wir warum verarbeiten und welche Rechte Sie haben.
 - **Sondermerkmale**, soweit für gesetzliche Ansprüche erforderlich: Geburtsdatum
   (Jugendarbeitsschutz), Schwerbehinderung (Zusatzurlaub), Minijob-Status.
 - **Arbeitszeiten:** Beginn, Ende, Pausen, Korrekturen samt Begründung.
+- **Erfassungsweg je Stempelung:** wie ein Beginn oder Ende erfasst wurde
+  (z. B. „Browser“) und der grob erkannte Gerätetyp (z. B. „iPhone · Safari“),
+  damit nachvollziehbar bleibt, wie eine Zeit zustande kam. Es wird **keine**
+  eindeutige Gerätekennung und **kein** Standort gespeichert.
 - **Abwesenheiten:** Urlaub und Krankheitstage. Bei Krankheit wird lediglich
   vermerkt, **ob** eine AU-Bescheinigung vorliegt — **keine** Diagnosen oder
   Gesundheitsdetails.
