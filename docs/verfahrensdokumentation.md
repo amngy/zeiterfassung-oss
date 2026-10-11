@@ -208,7 +208,15 @@ beim Stempeln erfassen“ aktiviert (Voreinstellung: aus), kommt der grob
 erkannte Gerätetyp hinzu (z. B. „iPhone · Safari“). Er dient der
 Plausibilitätsprüfung und ist nur in der Administrationsansicht „Alle Zeiten“
 sichtbar, nicht in den Exporten zur Lohnabrechnung. Vor der Aktivierung ist
-der Betriebsrat zu beteiligen (§ 87 Abs. 1 Nr. 6 BetrVG). Sicherung
+der Betriebsrat zu beteiligen (§ 87 Abs. 1 Nr. 6 BetrVG).
+
+Endet ein Arbeitstag mit einem Ausstempeln über den Webzugang und liegt der Tag
+mehr als die eingestellten Minuten (Voreinstellung 60, 0 = aus) über dem Soll,
+erscheint er unter „Korrekturen“ zur Prüfung. Der Hinweis wird bei jedem Aufruf
+aus den gespeicherten Zeiten berechnet; gespeichert wird nur die Bestätigung
+„geprüft“ (wer, wann) samt Protokolleintrag. Die Zeiten selbst bleiben
+unverändert, und die betroffene Person sieht den Status in ihren Zeiten. Auch
+hierfür gilt § 87 Abs. 1 Nr. 6 BetrVG. Sicherung
 über die verwaltete Datenbank zzgl. regelmäßiger `pg_dump`-Kopien (siehe README).
 
 ## 9. Änderungen an dieser Dokumentation

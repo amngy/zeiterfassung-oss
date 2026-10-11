@@ -28,6 +28,12 @@ Daten wir warum verarbeiten und welche Rechte Sie haben.
   Stempelung plausibel ist — etwa ob ein Arbeitsende am Arbeitsplatz oder auf
   einem Mobilgerät erfasst wurde. Es wird **keine** eindeutige Gerätekennung
   und **kein** Standort gespeichert.
+- **Prüfhinweis:** Endet ein Arbeitstag mit einem Ausstempeln über den
+  Webzugang und liegt er deutlich über der Sollzeit (Voreinstellung: mehr als
+  60 Minuten), wird der Tag der Verwaltung zur Prüfung angezeigt. Dafür werden
+  keine zusätzlichen Daten erhoben, nur die ohnehin gespeicherten Zeiten
+  ausgewertet. An den Zeiten ändert sich nichts. Sie sehen in Ihren Zeiten, ob
+  ein Tag „in Prüfung“ oder „geprüft“ ist.
 - **Abwesenheiten:** Urlaub und Krankheitstage. Bei Krankheit wird lediglich
   vermerkt, **ob** eine AU-Bescheinigung vorliegt — **keine** Diagnosen oder
   Gesundheitsdetails.
