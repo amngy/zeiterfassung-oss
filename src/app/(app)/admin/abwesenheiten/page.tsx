@@ -7,7 +7,7 @@ import { getAppSettings } from "@/lib/settings";
 import {
   getAbsencesForYear,
   getAbsencesInRange,
-  getPendingVacationRequests,
+  getPendingAbsenceRequests,
   getSickCreditCandidates,
   getStaffVacationOverview,
 } from "@/lib/absences";
@@ -18,6 +18,8 @@ import {
   eachDayKey,
   formatDayKey,
   formatDays,
+  sickNoteDue,
+  sickNoteDueKey,
   monthRangeOf,
 } from "@/lib/time";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +45,7 @@ import {
   decideAbsenceAction,
   sendReminderAction,
 } from "./actions";
+import { ABSENCE_LABEL, isSicknessKind } from "@/lib/time/absence-kinds";
 
 export const metadata: Metadata = { title: "Abwesenheiten" };
 
@@ -64,7 +67,7 @@ export default async function AdminAbsencesPage({
   const { from, to } = monthRangeOf(monthAnchor);
 
   const [pending, overview, candidates, settings, teamAbsences, employeeRows] = await Promise.all([
-    getPendingVacationRequests(),
+    getPendingAbsenceRequests(),
     getStaffVacationOverview(year),
     getSickCreditCandidates(year),
     getAppSettings(),
@@ -93,6 +96,19 @@ export default async function AdminAbsencesPage({
   const correctableRows = (
     await Promise.all(employeeRows.map((u) => getAbsencesForYear(u.id, year)))
   ).flat();
+  const dueSickNotes = correctableRows.filter(
+    (a) =>
+      a.type === "SICK" &&
+      (a.status === "APPROVED" || a.status === "PENDING") &&
+      sickNoteDue(
+        { fromKey: fmtKey(a.startDate), toKey: fmtKey(a.endDate), sickNoteOnFile: a.sickNoteOnFile },
+        settings.auRequiredFromDay,
+        todayKey,
+      ),
+  );
+  const dueIds = new Set(dueSickNotes.map((a) => a.id));
+  const nameOf = new Map(employeeRows.map((u) => [u.id, u.name]));
+
   const correctable: CorrectableAbsence[] = correctableRows.map((a) => ({
     id: a.id,
     userId: a.userId,
@@ -102,6 +118,7 @@ export default async function AdminAbsencesPage({
     halfDayStart: a.halfDayStart,
     halfDayEnd: a.halfDayEnd,
     sickNoteOnFile: a.sickNoteOnFile,
+    sickNoteDue: dueIds.has(a.id),
     creditedBackFromVacation: a.creditedBackFromVacation,
     workingDaysCount: a.workingDaysCount,
     status: a.status,
@@ -137,9 +154,12 @@ export default async function AdminAbsencesPage({
   for (const a of teamAbsences) {
     const aFrom = fmtKey(a.startDate);
     const aTo = fmtKey(a.endDate);
-    const tone: CalendarMark["tone"] =
-      a.type === "SICK" ? "sick" : a.status === "APPROVED" ? "vacation" : "vacation-pending";
-    const verb = a.type === "SICK" ? "krank" : a.status === "APPROVED" ? "Urlaub" : "Urlaub (offen)";
+    const tone: CalendarMark["tone"] = isSicknessKind(a.type)
+      ? "sick"
+      : a.status === "APPROVED"
+        ? "vacation"
+        : "vacation-pending";
+    const verb = `${ABSENCE_LABEL[a.type]}${a.status === "PENDING" ? " (offen)" : ""}`;
     for (const key of eachDayKey(aFrom < from ? from : aFrom, aTo > to ? to : aTo)) {
       addMark(key, { tone, label: `${a.user.name}: ${verb}` });
     }
@@ -157,12 +177,12 @@ export default async function AdminAbsencesPage({
         </p>
       </header>
 
-      {/* ── Pending vacation requests ─────────────────────────────────────── */}
+      {/* ── Pending requests (leave and the other requestable kinds) ──────── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-1.5 text-base">
-            Offene Urlaubsanträge {pending.length > 0 && <Badge tone="warning">{pending.length}</Badge>}
-            <InfoHint>{`Genehmigt den Antrag und bucht den Urlaub. Die verbrauchten Arbeitstage werden dabei neu berechnet – seit dem Antrag geänderte Arbeitszeiten oder Feiertage fließen in die genehmigte Zahl ein.`}</InfoHint>
+            Offene Anträge {pending.length > 0 && <Badge tone="warning">{pending.length}</Badge>}
+            <InfoHint>{`Genehmigt den Antrag und bucht die Abwesenheit (Urlaub wird vom Anspruch abgezogen). Die Arbeitstage werden dabei neu berechnet – seit dem Antrag geänderte Arbeitszeiten oder Feiertage fließen in die genehmigte Zahl ein.`}</InfoHint>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -176,7 +196,9 @@ export default async function AdminAbsencesPage({
                   className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm"
                 >
                   <div>
-                    <p className="font-medium text-ink">{r.user.name}</p>
+                    <p className="font-medium text-ink">
+                      {r.user.name} · {ABSENCE_LABEL[r.type]}
+                    </p>
                     <p className="text-muted">
                       {formatDayKey(fmtKey(r.startDate))} – {formatDayKey(fmtKey(r.endDate))} ·{" "}
                       <strong>{formatDays(r.workingDaysCount)}</strong> Tage
@@ -206,6 +228,36 @@ export default async function AdminAbsencesPage({
           )}
         </CardContent>
       </Card>
+
+      {/* ── Sick notes due (EFZG §5, setting "AU-Pflicht ab Tag") ─────────── */}
+      {dueSickNotes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex flex-wrap items-center gap-1.5 text-base">
+              AU-Bescheinigung fällig <Badge tone="warning">{dueSickNotes.length}</Badge>
+              <InfoHint>{`Krankmeldungen, die den ${settings.auRequiredFromDay}. Krankheitstag erreicht haben und für die noch keine AU/eAU vermerkt ist (Einstellung „AU-Pflicht ab Tag“, EFZG §5). Bei gesetzlich Versicherten die eAU bei der Krankenkasse abrufen; danach unter „Abwesenheit nachträglich korrigieren“ „AU-Bescheinigung liegt vor“ setzen.`}</InfoHint>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {dueSickNotes.map((a) => {
+                const fromKey = fmtKey(a.startDate);
+                const toKey = fmtKey(a.endDate);
+                const dueKey = sickNoteDueKey({ fromKey, toKey, sickNoteOnFile: false }, settings.auRequiredFromDay);
+                return (
+                  <li key={a.id} className="rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm">
+                    <p className="font-medium text-ink">{nameOf.get(a.userId) ?? "—"}</p>
+                    <p className="text-muted">
+                      Krank {formatDayKey(fromKey)} – {formatDayKey(toKey)}
+                      {dueKey && ` · fällig seit ${formatDayKey(dueKey)}`}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── §9 sick-during-vacation review queue ──────────────────────────── */}
       {candidates.length > 0 && (

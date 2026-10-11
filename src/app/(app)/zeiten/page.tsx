@@ -17,6 +17,7 @@ import {
   type TimesheetView,
 } from "@/lib/timesheet";
 import { getUserCorrections, getOpenEntries, RESOLVE_OPEN_AFTER_MS } from "@/lib/corrections";
+import { findRemoteReviewFlags, reviewStateByDay } from "@/lib/punch-review";
 import { cn } from "@/lib/cn";
 import { ClockCard } from "./clock-card";
 import { CorrectionForm, type CorrectableEntry } from "./correction-form";
@@ -30,6 +31,7 @@ import {
   ViolationList,
 } from "./views";
 import { clockIn, clockOut, endBreak, startBreak } from "./actions";
+import { ABSENCE_LABEL } from "@/lib/time/absence-kinds";
 
 export const metadata: Metadata = { title: "Meine Zeiten" };
 
@@ -73,6 +75,16 @@ export default async function ZeitenPage({
     // clock-in is the whole lockout bug, so it is loaded on every view.
     getOpenEntries(user.id),
   ]);
+
+  const reviewDays = reviewStateByDay(
+    await findRemoteReviewFlags({
+      fromKey: sheet.range.from,
+      toKey: sheet.range.to,
+      userId: user.id,
+      period: sheet.period,
+      asOf,
+    }),
+  );
 
   // Only entries old enough to be implausible need the resolution form; a
   // normally-running shift is ended with the ordinary "Ausstempeln" button.
@@ -150,7 +162,7 @@ export default async function ZeitenPage({
         expectedMs={today.day.expectedMs}
         absenceMs={today.day.absenceMs}
         absenceLabel={
-          today.day.absence ? (today.day.absence.kind === "SICK" ? "Krank" : "Urlaub") : null
+          today.day.absence ? ABSENCE_LABEL[today.day.absence.kind] : null
         }
         renderAtISO={asOf.toISOString()}
         dayEndsAtISO={berlinDayRange(todayKey).end.toISOString()}
@@ -212,7 +224,11 @@ export default async function ZeitenPage({
 
         {view === "day" && sheet.period.days[0] ? (
           <>
-            <DayDetail day={sheet.period.days[0]} violations={sheet.violations} />
+            <DayDetail
+              day={sheet.period.days[0]}
+              violations={sheet.violations}
+              review={reviewDays[sheet.period.days[0]!.date]}
+            />
             <CorrectionForm
               dayKey={anchor}
               entries={correctable}
@@ -222,7 +238,7 @@ export default async function ZeitenPage({
         ) : (
           <>
             <PeriodTotals period={sheet.period} />
-            <TimesheetTable period={sheet.period} violations={sheet.violations} />
+            <TimesheetTable period={sheet.period} violations={sheet.violations} reviewDays={reviewDays} />
             <ViolationList violations={sheet.violations} />
             <p className="text-sm text-muted">
               Zum Nachtragen oder Korrigieren einer Zeit in die{" "}

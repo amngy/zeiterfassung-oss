@@ -14,7 +14,10 @@ payroll-ready exports — all in German for end users.
 
 ## Features
 
-- **Clock in / out, breaks**, with a live "today" status.
+- **Clock in / out, breaks**, with a live "today" status — in the browser, or
+  by scanning the **rotating QR code on an entrance terminal** (a tablet under
+  Verwaltung → Terminals; the code changes every 30 s and is accepted for at
+  most 90 s). Every punch records how it arrived (browser / QR + terminal).
 - **Timesheets** by day / week / month with worked time, breaks and overtime
   (Gleitzeitsaldo).
 - **Tamper-evident corrections:** times are never overwritten — a correction
@@ -35,7 +38,9 @@ payroll-ready exports — all in German for end users.
   stays.
 - **Absences:** vacation requests (incl. half-days), sick days (with AU flag),
   approval flow, §9 BUrlG credit-back, carry-over reminders, personal & team
-  calendars. Entitlement honours BUrlG §3/§4/§5, SGB IX §208 and JArbSchG §19.
+  calendars. Further kinds — Sonderurlaub, Fortbildung, Dienstreise (credited),
+  Freizeitausgleich (drawn from overtime), unbezahlter Urlaub, Elternzeit,
+  Mutterschutz, Kind krank (Soll dropped) — go through the same approval flow. Entitlement honours BUrlG §3/§4/§5, SGB IX §208 and JArbSchG §19.
   An approved absence **credits the day's Soll** rather than reducing it, so a
   holiday comes out level instead of as a day of undertime, the month's Soll
   still states the contract, and the credit is reported as its own column

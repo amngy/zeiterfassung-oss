@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { ABSENCE_KINDS, REQUESTABLE_KINDS } from "@/lib/time/absence-kinds";
+import type { AbsenceKind } from "@/lib/time/types";
 
 // All dates arrive as "YYYY-MM-DD" calendar days from <input type="date">; an
 // absence is whole calendar days (no instants), so no timezone conversion is
@@ -15,9 +17,18 @@ const dayKey = z
 
 const note = z.string().trim().max(500, "Höchstens 500 Zeichen").optional();
 
-/** Employee requests vacation for a date range, optionally with half-day edges. */
+const absenceKind = z.enum(ABSENCE_KINDS, { message: "Bitte eine Art wählen" });
+const requestableKind = absenceKind.refine((k: AbsenceKind) => REQUESTABLE_KINDS.includes(k), {
+  message: "Diese Abwesenheit wird nicht beantragt",
+});
+
+/**
+ * Employee requests leave or another requestable absence for a date range,
+ * optionally with half-day edges. `type` defaults to vacation.
+ */
 export const vacationRequestSchema = z
   .object({
+    type: requestableKind.default("VACATION"),
     startDate: dayKey,
     endDate: dayKey,
     halfDayStart: z.boolean().default(false),
@@ -63,7 +74,7 @@ export type SickRecordInput = z.infer<typeof sickRecordSchema>;
 export const absenceCorrectionSchema = z
   .object({
     absenceId: z.string().min(1),
-    type: z.enum(["VACATION", "SICK"]),
+    type: absenceKind,
     startDate: dayKey,
     endDate: dayKey,
     halfDayStart: z.boolean().default(false),

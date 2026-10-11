@@ -8,6 +8,13 @@ import { Field } from "@/components/ui/field";
 import { InfoHint } from "@/components/ui/info-hint";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import {
+  ABSENCE_EFFECT_TEXT,
+  ABSENCE_KINDS,
+  ABSENCE_LABEL,
+  ABSENCE_TREATMENT,
+} from "@/lib/time/absence-kinds";
+import type { AbsenceKind } from "@/lib/time/types";
+import {
   adminRecordAbsenceAction,
   updateEntitlementAction,
   type AdminAbsenceState,
@@ -56,7 +63,7 @@ export function AdminRecordForm({
     adminRecordAbsenceAction,
     {},
   );
-  const [type, setType] = React.useState<"VACATION" | "SICK">("VACATION");
+  const [type, setType] = React.useState<AbsenceKind>("VACATION");
 
   return (
     <form action={action} className="space-y-4">
@@ -76,16 +83,20 @@ export function AdminRecordForm({
         <Field
           label="Art"
           htmlFor="r-type"
-          info={`Urlaub wird vom Jahresanspruch abgezogen und sofort als genehmigt gebucht. Krankheit wird nur erfasst und verringert den Urlaubsanspruch nie.`}
+          hint={ABSENCE_EFFECT_TEXT[ABSENCE_TREATMENT[type]]}
+          info={`Wird sofort als genehmigt gebucht. Nur Urlaub wird vom Jahresanspruch abgezogen; Krankheit verringert ihn nie. Sonderurlaub, Fortbildung und Dienstreise werden wie Arbeitszeit gutgeschrieben, Freizeitausgleich wird aus dem Überstundensaldo genommen, bei unbezahltem Urlaub, Elternzeit, Mutterschutz und „Kind krank“ entfällt die Sollzeit.`}
         >
           <Select
             id="r-type"
             name="type"
             value={type}
-            onChange={(e) => setType(e.target.value as "VACATION" | "SICK")}
+            onChange={(e) => setType(e.target.value as AbsenceKind)}
           >
-            <option value="VACATION">Urlaub</option>
-            <option value="SICK">Krankheit</option>
+            {ABSENCE_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {ABSENCE_LABEL[k]}
+              </option>
+            ))}
           </Select>
         </Field>
       </div>
@@ -103,7 +114,7 @@ export function AdminRecordForm({
         </Field>
       </div>
 
-      {type === "VACATION" ? (
+      {type !== "SICK" ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex items-center gap-1.5">
             <label className="flex items-center gap-2.5 text-sm">

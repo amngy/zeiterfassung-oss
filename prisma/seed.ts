@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 import { DEFAULT_SETTINGS } from "@/lib/settings";
 import { seedPublicHolidays } from "@/lib/holidays";
-import { adminCreateAbsence, createVacationRequest, recordSick } from "@/lib/absences";
+import { adminCreateAbsence, createAbsenceRequest, recordSick } from "@/lib/absences";
 
 interface WeekdayHours {
   mon: number;
@@ -113,7 +113,8 @@ async function seedDemoAbsences(
       toKey: `${year}-07-10`,
       note: "Sommerurlaub",
     });
-    await createVacationRequest({
+    await createAbsenceRequest({
+      type: "VACATION",
       userId: anna,
       requestedById: anna,
       fromKey: `${year}-08-17`,

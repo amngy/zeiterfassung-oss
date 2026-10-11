@@ -25,6 +25,7 @@ import {
 } from "@/components/calendar/month-calendar";
 import { SickRecordForm, VacationRequestForm } from "./request-forms";
 import { withdrawRequestAction } from "./actions";
+import { ABSENCE_LABEL, isSicknessKind } from "@/lib/time/absence-kinds";
 
 const fmtDays = formatDays;
 
@@ -72,9 +73,12 @@ export default async function AbsencePage({
     const aTo = berlinDayKey(a.endDate, "UTC");
     if (aTo < from || aFrom > to) continue;
     if (a.status === "REJECTED" || a.status === "CANCELLED") continue;
-    const tone: CalendarMark["tone"] =
-      a.type === "SICK" ? "sick" : a.status === "APPROVED" ? "vacation" : "vacation-pending";
-    const label = a.type === "SICK" ? "Krank" : a.status === "APPROVED" ? "Urlaub" : "Urlaub (beantragt)";
+    const tone: CalendarMark["tone"] = isSicknessKind(a.type)
+      ? "sick"
+      : a.status === "APPROVED"
+        ? "vacation"
+        : "vacation-pending";
+    const label = `${ABSENCE_LABEL[a.type]}${a.status === "PENDING" ? " (beantragt)" : ""}`;
     for (const key of eachDayKey(aFrom < from ? from : aFrom, aTo > to ? to : aTo)) {
       addMark(key, { tone, label });
     }
@@ -88,7 +92,7 @@ export default async function AbsencePage({
       <header>
         <h1 className="text-2xl font-medium tracking-tight text-ink">Urlaub &amp; Abwesenheit</h1>
         <p className="text-sm text-muted">
-          Urlaubskonto, Urlaubsanträge und Krankmeldungen für {year}.
+          Urlaubskonto, Anträge und Krankmeldungen für {year}.
         </p>
       </header>
 
@@ -227,13 +231,21 @@ function VacationAccountCard({
             Krankheitstage {account.year}: <strong>{fmtDays(account.sickDays)}</strong> — sie mindern den
             Urlaubsanspruch nicht.
           </li>
+          {account.childSickDays > 0 && (
+            <li className="flex items-start gap-2">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
+              <span>
+                „Kind krank“ {account.year}: <strong>{fmtDays(account.childSickDays)}</strong> Tage{" "}
+                <InfoHint>{`Freistellung bei Erkrankung eines Kindes (§ 45 SGB V). Das Kinderkrankengeld zahlt die Krankenkasse; wie viele Tage je Kind und Jahr zustehen, legt das Gesetz fest. Die App zählt nur mit und begrenzt nichts.`}</InfoHint>
+              </span>
+            </li>
+          )}
         </ul>
       </CardContent>
     </Card>
   );
 }
 
-const TYPE_LABEL = { VACATION: "Urlaub", SICK: "Krankheit" } as const;
 const STATUS: Record<string, { label: string; tone: "warning" | "lime" | "danger" }> = {
   PENDING: { label: "ausstehend", tone: "warning" },
   APPROVED: { label: "genehmigt", tone: "lime" },
@@ -267,10 +279,10 @@ function AbsenceList({
                 <li key={a.id} className="rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-medium text-ink">
-                      {TYPE_LABEL[a.type]} · {range}
+                      {ABSENCE_LABEL[a.type]} · {range}
                     </span>
                     <div className="flex items-center gap-2">
-                      <Badge tone={a.type === "SICK" ? "info" : "neutral"}>
+                      <Badge tone={isSicknessKind(a.type) ? "info" : "neutral"}>
                         {fmtDays(a.workingDaysCount)} {a.type === "SICK" ? "Krankheitstage" : "Tage"}
                       </Badge>
                       <Badge tone={s.tone}>{s.label}</Badge>
@@ -294,7 +306,7 @@ function AbsenceList({
                     </p>
                   )}
                   {a.note && <p className="mt-1 text-xs text-muted">{a.note}</p>}
-                  {a.type === "VACATION" && a.status === "PENDING" && (
+                  {a.type !== "SICK" && a.status === "PENDING" && (
                     <form action={withdrawRequestAction} className="mt-2 flex items-center gap-1.5">
                       <input type="hidden" name="absenceId" value={a.id} />
                       <button
@@ -303,7 +315,7 @@ function AbsenceList({
                       >
                         Antrag zurückziehen
                       </button>
-                      <InfoHint>{`Zieht den Urlaubsantrag zurück und gibt die beantragten Tage wieder frei. Nur solange der Antrag ausstehend ist; genehmigte Anträge kann nur die Verwaltung ändern.`}</InfoHint>
+                      <InfoHint>{`Zieht den Antrag zurück und gibt die beantragten Tage wieder frei. Nur solange der Antrag ausstehend ist; genehmigte Anträge kann nur die Verwaltung ändern.`}</InfoHint>
                     </form>
                   )}
                 </li>

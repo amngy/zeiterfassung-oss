@@ -23,6 +23,8 @@ import { Field } from "@/components/ui/field";
 import { InfoHint } from "@/components/ui/info-hint";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { formatDayKey, formatDays } from "@/lib/time";
+import { ABSENCE_KINDS, ABSENCE_LABEL, isSicknessKind } from "@/lib/time/absence-kinds";
+import type { AbsenceKind } from "@/lib/time/types";
 import {
   cancelAbsenceAction,
   correctAbsenceAction,
@@ -34,13 +36,15 @@ import type { EmployeeOption } from "./admin-forms";
 export interface CorrectableAbsence {
   id: string;
   userId: string;
-  type: "VACATION" | "SICK";
+  type: AbsenceKind;
   /** "YYYY-MM-DD". */
   startDate: string;
   endDate: string;
   halfDayStart: boolean;
   halfDayEnd: boolean;
   sickNoteOnFile: boolean;
+  /** Sick spell past the configured AU day without a certificate on file. */
+  sickNoteDue: boolean;
   creditedBackFromVacation: boolean;
   workingDaysCount: number;
   status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
@@ -131,14 +135,15 @@ export function AbsenceCorrectionPanel({
               <li key={a.id} className="rounded-xl bg-white px-3 py-2.5 text-sm shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium text-ink">
-                    {a.type === "VACATION" ? "Urlaub" : "Krankheit"} ·{" "}
+                    {ABSENCE_LABEL[a.type]} ·{" "}
                     {formatDayKey(a.startDate)} – {formatDayKey(a.endDate)}
                   </span>
                   <div className="flex items-center gap-2">
-                    <Badge tone={a.type === "SICK" ? "info" : "neutral"}>
+                    <Badge tone={isSicknessKind(a.type) ? "info" : "neutral"}>
                       {formatDays(a.workingDaysCount)} Tage
                     </Badge>
                     <Badge tone={s.tone}>{s.label}</Badge>
+                    {a.sickNoteDue && <Badge tone="warning">AU fällig</Badge>}
                     {isLive(a) && (
                       <button
                         type="button"
@@ -216,10 +221,13 @@ function CorrectionForm({ absence }: { absence: CorrectableAbsence }) {
               id={`k-type-${absence.id}`}
               name="type"
               value={type}
-              onChange={(e) => setType(e.target.value as "VACATION" | "SICK")}
+              onChange={(e) => setType(e.target.value as AbsenceKind)}
             >
-              <option value="VACATION">Urlaub</option>
-              <option value="SICK">Krankheit</option>
+              {ABSENCE_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {ABSENCE_LABEL[k]}
+                </option>
+              ))}
             </Select>
           </Field>
           <Field
@@ -247,7 +255,7 @@ function CorrectionForm({ absence }: { absence: CorrectableAbsence }) {
           </Field>
         </div>
 
-        {type === "VACATION" ? (
+        {type !== "SICK" ? (
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex items-center gap-2.5 text-sm">
               <input

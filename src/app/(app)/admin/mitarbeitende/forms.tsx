@@ -144,7 +144,7 @@ function StatusFlags({
   );
 }
 
-export function CreateUserForm() {
+export function CreateUserForm({ defaultVacationDays }: { defaultVacationDays: number }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createUserAction, {});
   return (
     <form action={action} className="space-y-4">
@@ -201,9 +201,9 @@ export function CreateUserForm() {
         <Field
           label="Jahresurlaub (Tage)"
           htmlFor="c-vac"
-          info={`Vertraglicher Jahresurlaub, bereits auf die Arbeitswoche umgerechnet (z. B. 4-Tage-Woche ≈ 22 Tage). Der Mindesturlaub nach BUrlG §3 greift automatisch, falls höher. Halbe Tage möglich.`}
+          info={`Vertraglicher Jahresurlaub, bereits auf die Arbeitswoche umgerechnet (z. B. 4-Tage-Woche ≈ 22 Tage). Vorbelegt mit dem Standard-Jahresurlaub aus den Einstellungen. Der Mindesturlaub nach BUrlG §3 greift automatisch, falls höher. Halbe Tage möglich.`}
         >
-          <Input id="c-vac" name="vacationDaysPerYear" type="number" step="0.5" min={0} max={365} defaultValue={28} />
+          <Input id="c-vac" name="vacationDaysPerYear" type="number" step="0.5" min={0} max={365} defaultValue={defaultVacationDays} />
         </Field>
       </div>
       <StatusFlags />

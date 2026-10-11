@@ -7,9 +7,15 @@ import { authConfig } from "@/auth.config";
 export default NextAuth(authConfig).auth;
 
 export const config = {
-  // Run on everything except Auth.js routes, the healthcheck, Next internals
-  // and static assets.
+  // Run on everything except Auth.js routes, the healthcheck, Next internals,
+  // static assets, the manifest and icons — browsers fetch those without the
+  // session cookie (also on the sign-in page), so they must stay public — and
+  // the on-site terminal. The terminal has no user session — every /terminal
+  // route checks its own device cookie — and running Auth.js there would
+  // re-issue a leftover user session on every 30 s poll. /sitzung-beendet
+  // deletes the session cookie, which the proxy would re-issue on the same
+  // response.
   matcher: [
-    "/((?!api/auth|api/health|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    "/((?!api/auth|api/health|_next/static|_next/image|favicon.ico|manifest\\.webmanifest$|icon$|apple-icon$|app-icon/|terminal(?:/|$)|sitzung-beendet$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
   ],
 };
