@@ -1,8 +1,10 @@
-// Absence data layer (vacation + sick leave). Pairs the PURE vacation maths in
-// @/lib/time (day counting, entitlement) with the DB and the holiday map, and
-// enforces the leave rules: vacation is approval-gated, sick leave is a recorded
-// fact (never deducts vacation), and §9 BUrlG lets certified sickness during an
-// approved holiday be credited back.
+// Absence data layer (vacation, sick leave and the other kinds in
+// absence-kinds.ts). Pairs the PURE vacation maths in @/lib/time (day counting,
+// entitlement) with the DB and the holiday map, and enforces the leave rules:
+// vacation and the other requestable kinds are approval-gated, sick leave is a
+// recorded fact (never deducts vacation), and §9 BUrlG lets certified sickness
+// during an approved holiday be credited back. Only VACATION touches the leave
+// account.
 //
 // Working-day counts are computed with the SAME expectedHours logic as overtime,
 // so a holiday or part-time day is interpreted identically everywhere.
@@ -18,7 +20,10 @@ import {
   computeEntitlement,
   countVacationDays,
   scheduleForDay,
+  ABSENCE_LABEL,
+  REQUESTABLE_KINDS,
   type AbsenceEffect,
+  type AbsenceKind,
   type AbsenceSpan,
   type EntitlementBreakdown,
   type ScheduleInput,
@@ -102,6 +107,8 @@ export interface VacationAccount {
   available: number;
   /** Approved sick working-days this year (never affects the balance). */
   sickDays: number;
+  /** Approved "Kind krank" working-days this year (§ 45 SGB V; shown, not enforced). */
+  childSickDays: number;
   carryOverReminderSentAt: Date | null;
 }
 
@@ -184,12 +191,15 @@ export async function getVacationAccount(
   let taken = 0;
   let planned = 0;
   let sickDays = 0;
+  let childSickDays = 0;
   for (const a of absences) {
     if (a.type === "VACATION") {
       if (a.status === "APPROVED") taken += a.workingDaysCount;
       else planned += a.workingDaysCount;
     } else if (a.type === "SICK" && a.status === "APPROVED") {
       sickDays += a.workingDaysCount;
+    } else if (a.type === "CHILD_SICK" && a.status === "APPROVED") {
+      childSickDays += a.workingDaysCount;
     }
   }
 
@@ -202,6 +212,7 @@ export async function getVacationAccount(
     remaining,
     available: round2(remaining - planned),
     sickDays: round2(sickDays),
+    childSickDays: round2(childSickDays),
     carryOverReminderSentAt: user.carryOverReminderSentAt,
   };
 }
@@ -209,13 +220,15 @@ export async function getVacationAccount(
 // ── Overlap guard ─────────────────────────────────────────────────────────────
 
 /**
- * Existing same-type absences overlapping [from, to] for a user (PENDING or
- * APPROVED). Two holidays can't overlap, two sick spells can't; but sick MAY
- * overlap vacation (the §9 credit-back case), so the type filter is by design.
+ * Existing absences overlapping [from, to] that the new one may not overlap
+ * (PENDING or APPROVED). Two sick spells can't overlap, and neither can two of
+ * the other kinds (a holiday and a Fortbildung on the same day, say); but
+ * sickness MAY overlap any of them (the §9 credit-back case), so sickness is
+ * only checked against sickness.
  */
 async function findOverlap(
   userId: string,
-  type: "VACATION" | "SICK",
+  type: AbsenceKind,
   fromKey: string,
   toKey: string,
   /** The row being edited, which must not collide with itself. */
@@ -224,7 +237,7 @@ async function findOverlap(
   return prisma.absence.findFirst({
     where: {
       userId,
-      type,
+      type: type === "SICK" ? "SICK" : { not: "SICK" },
       status: { in: ["PENDING", "APPROVED"] },
       startDate: { lte: dateKeyToUtc(toKey) },
       endDate: { gte: dateKeyToUtc(fromKey) },
@@ -232,6 +245,17 @@ async function findOverlap(
     },
     select: { id: true },
   });
+}
+
+/** "Urlaub", "Fortbildung", … for messages. */
+export function absenceLabel(type: AbsenceKind): string {
+  return ABSENCE_LABEL[type];
+}
+
+function overlapMessage(type: AbsenceKind, other = false): string {
+  return type === "SICK"
+    ? `Für diesen Zeitraum besteht bereits eine ${other ? "andere " : ""}Krankmeldung.`
+    : `Für diesen Zeitraum besteht bereits ein ${other ? "anderer " : ""}Abwesenheitseintrag (Urlaub o. Ä.).`;
 }
 
 const MAX_RANGE_DAYS = 366;
@@ -244,8 +268,12 @@ function assertSaneRange(fromKey: string, toKey: string): void {
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
-/** Employee (or admin on their behalf) requests vacation. Stays PENDING. */
-export async function createVacationRequest(args: {
+/**
+ * Employee (or admin on their behalf) requests leave or another requestable
+ * absence (Sonderurlaub, Fortbildung, …). Stays PENDING until decided.
+ */
+export async function createAbsenceRequest(args: {
+  type: AbsenceKind;
   userId: string;
   requestedById: string;
   fromKey: string;
@@ -254,7 +282,8 @@ export async function createVacationRequest(args: {
   halfDayEnd: boolean;
   note?: string;
 }): Promise<void> {
-  const { userId, requestedById, fromKey, toKey, halfDayStart, halfDayEnd, note } = args;
+  const { type, userId, requestedById, fromKey, toKey, halfDayStart, halfDayEnd, note } = args;
+  if (!REQUESTABLE_KINDS.includes(type)) throw new AbsenceError("Diese Abwesenheit wird nicht beantragt.");
   assertSaneRange(fromKey, toKey);
 
   const days = await workingDaysForRange(userId, fromKey, toKey, { halfDayStart, halfDayEnd });
@@ -263,15 +292,15 @@ export async function createVacationRequest(args: {
       "In diesem Zeitraum liegen keine Arbeitstage (nur Wochenende/Feiertage).",
     );
   }
-  if (await findOverlap(userId, "VACATION", fromKey, toKey)) {
-    throw new AbsenceError("Für diesen Zeitraum besteht bereits ein Urlaubseintrag.");
+  if (await findOverlap(userId, type, fromKey, toKey)) {
+    throw new AbsenceError(overlapMessage(type));
   }
 
   await prisma.$transaction(async (tx) => {
     const created = await tx.absence.create({
       data: {
         userId,
-        type: "VACATION",
+        type,
         startDate: dateKeyToUtc(fromKey),
         endDate: dateKeyToUtc(toKey),
         halfDayStart,
@@ -284,10 +313,10 @@ export async function createVacationRequest(args: {
     });
     await writeAudit(tx, {
       actorUserId: requestedById,
-      action: "absence.vacation.request",
+      action: type === "VACATION" ? "absence.vacation.request" : "absence.request",
       targetType: "Absence",
       targetId: created.id,
-      newValue: { from: fromKey, to: toKey, days, halfDayStart, halfDayEnd },
+      newValue: { type, from: fromKey, to: toKey, days, halfDayStart, halfDayEnd },
       reason: note ?? null,
     });
   });
@@ -306,7 +335,7 @@ export async function recordSick(args: {
   assertSaneRange(fromKey, toKey);
 
   if (await findOverlap(userId, "SICK", fromKey, toKey)) {
-    throw new AbsenceError("Für diesen Zeitraum besteht bereits eine Krankmeldung.");
+    throw new AbsenceError(overlapMessage("SICK"));
   }
   const days = await workingDaysForRange(userId, fromKey, toKey);
 
@@ -515,7 +544,7 @@ export async function creditBackSick(args: {
 export async function adminCreateAbsence(args: {
   userId: string;
   actorId: string;
-  type: "VACATION" | "SICK";
+  type: AbsenceKind;
   fromKey: string;
   toKey: string;
   halfDayStart?: boolean;
@@ -526,16 +555,12 @@ export async function adminCreateAbsence(args: {
   const { userId, actorId, type, fromKey, toKey } = args;
   assertSaneRange(fromKey, toKey);
   if (await findOverlap(userId, type, fromKey, toKey)) {
-    throw new AbsenceError(
-      type === "VACATION"
-        ? "Für diesen Zeitraum besteht bereits ein Urlaubseintrag."
-        : "Für diesen Zeitraum besteht bereits eine Krankmeldung.",
-    );
+    throw new AbsenceError(overlapMessage(type));
   }
-  const halfDayStart = type === "VACATION" ? !!args.halfDayStart : false;
-  const halfDayEnd = type === "VACATION" ? !!args.halfDayEnd : false;
+  const halfDayStart = type !== "SICK" ? !!args.halfDayStart : false;
+  const halfDayEnd = type !== "SICK" ? !!args.halfDayEnd : false;
   const days = await workingDaysForRange(userId, fromKey, toKey, { halfDayStart, halfDayEnd });
-  if (type === "VACATION" && days <= 0) {
+  if (type !== "SICK" && days <= 0) {
     throw new AbsenceError("In diesem Zeitraum liegen keine Arbeitstage.");
   }
 
@@ -559,10 +584,15 @@ export async function adminCreateAbsence(args: {
     });
     await writeAudit(tx, {
       actorUserId: actorId,
-      action: type === "VACATION" ? "absence.admin.vacation" : "absence.admin.sick",
+      action:
+        type === "VACATION"
+          ? "absence.admin.vacation"
+          : type === "SICK"
+            ? "absence.admin.sick"
+            : "absence.admin.create",
       targetType: "Absence",
       targetId: created.id,
-      newValue: { for: userId, from: fromKey, to: toKey, days },
+      newValue: { for: userId, type, from: fromKey, to: toKey, days },
       reason: args.note ?? null,
     });
   });
@@ -824,7 +854,7 @@ async function applyRecounts(
 export interface AdminUpdateAbsenceArgs {
   absenceId: string;
   actorId: string;
-  type: "VACATION" | "SICK";
+  type: AbsenceKind;
   fromKey: string;
   toKey: string;
   halfDayStart?: boolean;
@@ -856,15 +886,11 @@ export async function adminUpdateAbsence(args: AdminUpdateAbsenceArgs): Promise<
     );
   }
   if (await findOverlap(before.userId, type, fromKey, toKey, absenceId)) {
-    throw new AbsenceError(
-      type === "VACATION"
-        ? "Für diesen Zeitraum besteht bereits ein anderer Urlaubseintrag."
-        : "Für diesen Zeitraum besteht bereits eine andere Krankmeldung.",
-    );
+    throw new AbsenceError(overlapMessage(type, true));
   }
 
-  const halfDayStart = type === "VACATION" ? !!args.halfDayStart : false;
-  const halfDayEnd = type === "VACATION" ? !!args.halfDayEnd : false;
+  const halfDayStart = type !== "SICK" ? !!args.halfDayStart : false;
+  const halfDayEnd = type !== "SICK" ? !!args.halfDayEnd : false;
   const sickNoteOnFile = type === "SICK" ? !!args.sickNoteOnFile : false;
   // §9 only ever credited a HOLIDAY. Turning a holiday into a sick spell (the
   // ordinary "she was ill, not on leave" correction) therefore also ends any
@@ -889,9 +915,9 @@ export async function adminUpdateAbsence(args: AdminUpdateAbsenceArgs): Promise<
     before.userId,
     fromKey,
     toKey,
-    type === "VACATION" ? { halfDayStart, halfDayEnd } : {},
+    type !== "SICK" ? { halfDayStart, halfDayEnd } : {},
   );
-  if (type === "VACATION" && days <= 0) {
+  if (type !== "SICK" && days <= 0) {
     throw new AbsenceError("In diesem Zeitraum liegen keine Arbeitstage.");
   }
   // Only a BOOKED holiday carries §9 credits; a still-pending request is
@@ -1111,12 +1137,13 @@ export async function getUserAbsences(userId: string, limit = 100) {
 }
 
 export async function getPendingAbsenceCount(): Promise<number> {
-  return prisma.absence.count({ where: { type: "VACATION", status: "PENDING" } });
+  return prisma.absence.count({ where: { type: { not: "SICK" }, status: "PENDING" } });
 }
 
-export async function getPendingVacationRequests() {
+/** Open requests of every requestable kind (leave, Sonderurlaub, …), oldest first. */
+export async function getPendingAbsenceRequests() {
   return prisma.absence.findMany({
-    where: { type: "VACATION", status: "PENDING" },
+    where: { type: { not: "SICK" }, status: "PENDING" },
     orderBy: { startDate: "asc" },
     include: { user: { select: { name: true, email: true } } },
   });

@@ -19,6 +19,7 @@ import {
   sickRecordSchema,
   vacationRequestSchema,
 } from "@/lib/validation/absence";
+import { ABSENCE_LABEL, isAbsenceKind } from "@/lib/time/absence-kinds";
 
 export interface AdminAbsenceState {
   ok?: boolean;
@@ -112,20 +113,21 @@ export async function updateEntitlementAction(
   return { ok: true, message: "Urlaubsanspruch aktualisiert." };
 }
 
-/** Record vacation or sick leave directly for an employee (admin entry). */
+/** Record an absence of any kind directly for an employee (admin entry). */
 export async function adminRecordAbsenceAction(
   _prev: AdminAbsenceState | undefined,
   formData: FormData,
 ): Promise<AdminAbsenceState> {
   const admin = await requireAdmin();
   const userId = String(formData.get("userId") ?? "");
-  const type = String(formData.get("type") ?? "");
-  if (!userId || (type !== "VACATION" && type !== "SICK")) {
+  const type = formData.get("type");
+  if (!userId || !isAbsenceKind(type)) {
     return { error: "Bitte Mitarbeiter:in und Art wählen." };
   }
 
-  // Reuse the same field validation as the employee forms.
-  const schema = type === "VACATION" ? vacationRequestSchema : sickRecordSchema;
+  // Reuse the same field validation as the employee forms (the type itself is
+  // already checked above; the request schema's own type field is not used).
+  const schema = type === "SICK" ? sickRecordSchema : vacationRequestSchema;
   const parsed = schema.safeParse({
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate"),
@@ -153,7 +155,7 @@ export async function adminRecordAbsenceAction(
     throw e;
   }
   refresh();
-  return { ok: true, message: type === "VACATION" ? "Urlaub eingetragen." : "Krankheit erfasst." };
+  return { ok: true, message: `${ABSENCE_LABEL[type]} eingetragen.` };
 }
 
 /**

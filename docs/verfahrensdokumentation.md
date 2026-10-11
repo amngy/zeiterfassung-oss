@@ -158,10 +158,25 @@ wird mit derselben Logik wie die Sollzeit berechnet (Feiertage/Teilzeit/halbe
 Tage einheitlich). Krankheit wird getrennt geführt und mindert den Urlaub nicht;
 § 9 BUrlG (Krankheit im Urlaub) wird über eine geprüfte Gutschrift abgebildet.
 
+Neben Urlaub und Krankheit gibt es weitere Abwesenheitsarten, die wie Urlaub
+beantragt und genehmigt werden; nur Urlaub belastet das Urlaubskonto:
+
+| Art | Wirkung im Zeitkonto |
+|---|---|
+| Sonderurlaub, Fortbildung, Dienstreise | Gutschrift wie Urlaub (Sollzeit wird ausgeglichen) |
+| Freizeitausgleich | keine Gutschrift — das Tagessoll wird aus dem Überstundensaldo genommen |
+| unbezahlter Urlaub, Elternzeit, Mutterschutz, „Kind krank“ (§ 45 SGB V) | die Sollzeit entfällt anteilig (wie an einem Feiertag); keine Gutschrift, keine Minusstunden |
+
+Überschneiden sich zwei Abwesenheiten, entscheidet Elternzeit/Mutterschutz/
+unbezahlter Urlaub vor Krankheit und Krankheit vor allen übrigen Arten.
+„Kind krank“-Tage werden je Kalenderjahr gezählt und angezeigt; eine gesetzliche
+Höchstzahl wird nicht erzwungen.
+
 ### 6.1 Bewertung im Zeitkonto
 
 Ein **Feiertag senkt** die Sollzeit — an ihm ist keine Arbeit geschuldet.
-Genehmigter Urlaub und erfasste Krankheit werden dagegen **gutgeschrieben**: Die
+Genehmigter Urlaub und erfasste Krankheit (und die übrigen bezahlten Arten, siehe
+Tabelle oben) werden dagegen **gutgeschrieben**: Die
 Sollzeit des Tages bleibt bestehen und wird bis zu ihrer Höhe als Abwesenheitszeit
 ausgeglichen (Entgeltfortzahlung, §11 BUrlG / §3 EFZG). Damit weist der Monat
 weiterhin die vertragliche Sollzeit aus, die Gutschrift erscheint als eigene Größe
