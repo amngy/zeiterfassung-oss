@@ -7,9 +7,10 @@ import { authConfig } from "@/auth.config";
 export default NextAuth(authConfig).auth;
 
 export const config = {
-  // Run on everything except Auth.js routes, the healthcheck, Next internals
-  // and static assets.
+  // Run on everything except Auth.js routes, the healthcheck, Next internals,
+  // static assets, and the manifest and icons — browsers fetch those without
+  // the session cookie (also on the sign-in page), so they must stay public.
   matcher: [
-    "/((?!api/auth|api/health|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
+    "/((?!api/auth|api/health|_next/static|_next/image|favicon.ico|manifest\\.webmanifest$|icon$|apple-icon$|app-icon/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?)$).*)",
   ],
 };
