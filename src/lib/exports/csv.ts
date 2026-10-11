@@ -164,9 +164,6 @@ export interface RawEntryRow {
   endClock: string;
   workedMs: number;
   source: "CLOCK" | "MANUAL";
-  /** How the start / end punch arrived ("Browser · iPhone · Safari"); "" if not punched. */
-  startVia: string;
-  endVia: string;
   status: "ACTIVE" | "SUPERSEDED";
   note: string | null;
 }
@@ -175,10 +172,7 @@ export interface RawEntryRow {
 export function rawEntriesCsv(rows: RawEntryRow[]): string {
   const lines: string[] = [];
   lines.push(
-    row([
-      "Mitarbeiter:in", "Datum", "Art", "Von", "Bis", "Dauer (Std)", "Erfassung",
-      "Beginn gestempelt über", "Ende gestempelt über", "Status", "Anmerkung",
-    ]),
+    row(["Mitarbeiter:in", "Datum", "Art", "Von", "Bis", "Dauer (Std)", "Erfassung", "Status", "Anmerkung"]),
   );
   for (const r of rows) {
     lines.push(
@@ -190,8 +184,6 @@ export function rawEntriesCsv(rows: RawEntryRow[]): string {
         r.endClock,
         hoursDecimal(r.workedMs),
         r.source === "MANUAL" ? "manuell" : "Stempeluhr",
-        r.startVia,
-        r.endVia,
         r.status === "ACTIVE" ? "aktiv" : "ersetzt",
         r.note ?? "",
       ]),

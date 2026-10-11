@@ -12,6 +12,7 @@ import {
   ruleProfileSchema,
   breakPolicySchema,
   correctionPolicySchema,
+  punchPolicySchema,
 } from "@/lib/validation/settings";
 
 // Every save below writes its setting(s) AND its audit record inside a single
@@ -185,6 +186,23 @@ export async function saveCorrectionPolicyAction(
   });
   refresh();
   return { section: "correctionPolicy", ok: true, message: "Governance-Einstellungen gespeichert." };
+}
+
+export async function savePunchPolicyAction(
+  _prev: SettingsState | undefined,
+  formData: FormData,
+): Promise<SettingsState> {
+  const admin = await requireAdmin();
+  const parsed = punchPolicySchema.safeParse({
+    recordDeviceType: formData.get("recordDeviceType") === "on",
+  });
+  if (!parsed.success) return { section: "punchPolicy", error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe." };
+  await prisma.$transaction(async (tx) => {
+    await setSetting("punchPolicy", parsed.data, tx);
+    await audit(tx, admin.id, "settings.punchPolicy", parsed.data);
+  });
+  refresh();
+  return { section: "punchPolicy", ok: true, message: "Stempel-Einstellungen gespeichert." };
 }
 
 async function audit(

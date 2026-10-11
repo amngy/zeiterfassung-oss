@@ -16,7 +16,7 @@ import {
   getTodayView,
   type TimesheetView,
 } from "@/lib/timesheet";
-import { getUserCorrections, getOpenEntries } from "@/lib/corrections";
+import { getUserCorrections, getOpenEntries, RESOLVE_OPEN_AFTER_MS } from "@/lib/corrections";
 import { cn } from "@/lib/cn";
 import { ClockCard } from "./clock-card";
 import { CorrectionForm, type CorrectableEntry } from "./correction-form";
@@ -76,9 +76,8 @@ export default async function ZeitenPage({
 
   // Only entries old enough to be implausible need the resolution form; a
   // normally-running shift is ended with the ordinary "Ausstempeln" button.
-  const STALE_MS = 16 * 3_600_000;
   const stale: OpenEntry[] = openEntries
-    .filter((e) => asOf.getTime() - e.start.getTime() > STALE_MS)
+    .filter((e) => asOf.getTime() - e.start.getTime() > RESOLVE_OPEN_AFTER_MS)
     .map((e) => ({
       id: e.id,
       type: e.type,

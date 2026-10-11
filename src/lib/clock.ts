@@ -77,18 +77,30 @@ function userLockKey(userId: string): number {
   return createHash("sha256").update(userId).digest().readInt32BE(0);
 }
 
+/** Take this user's clock lock inside `tx`. Anonymisation takes it as well. */
+export async function lockClock(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  await tx.$executeRaw`
+    SELECT pg_advisory_xact_lock(${CLOCK_LOCK_NAMESPACE}::int, ${userLockKey(userId)}::int)
+  `;
+}
+
 /**
  * Run `body` in a transaction that holds this user's clock lock. The lock is
  * released by Postgres at COMMIT/ROLLBACK, so there is no release path to miss.
+ *
+ * The account is re-checked under the lock: the caller's session check ran
+ * before it, and anonymisation takes the same lock, so a punch that was already
+ * in flight can neither land after the account was closed nor write a device
+ * label behind the anonymisation that just cleared them.
  */
 function withClockLock(
   userId: string,
   body: (tx: Prisma.TransactionClient) => Promise<ClockResult>,
 ): Promise<ClockResult> {
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`
-      SELECT pg_advisory_xact_lock(${CLOCK_LOCK_NAMESPACE}::int, ${userLockKey(userId)}::int)
-    `;
+    await lockClock(tx, userId);
+    const user = await tx.user.findUnique({ where: { id: userId }, select: { active: true } });
+    if (!user?.active) return fail("Ihr Konto ist nicht aktiv.");
     return body(tx);
   });
 }
@@ -124,8 +136,11 @@ async function closeOpen(
     select: { id: true },
   });
   if (!open) return null;
+  // The full predicate again, not just the id: an admin may supersede the row
+  // between the read and this write (those paths do not take the clock lock),
+  // and the UPDATE re-evaluates its WHERE after waiting for that row lock.
   const res = await tx.timeEntry.updateMany({
-    where: { id: open.id, end: null },
+    where: { id: open.id, userId, status: "ACTIVE", type, end: null },
     data: { end: at },
   });
   return res.count === 1 ? open.id : null;

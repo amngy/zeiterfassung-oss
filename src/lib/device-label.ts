@@ -5,12 +5,15 @@
 // not proof: any client can send any User-Agent. Verified device identity is the
 // job of passkeys, not of this string.
 
+// Windows Phone first: its User-Agents also claim Android or iPhone.
 const OS: [RegExp, string][] = [
+  [/Windows Phone/, "Windows Phone"],
   [/iPhone/, "iPhone"],
   [/iPad/, "iPad"],
   [/Android/, "Android"],
   [/Windows/, "Windows"],
-  // iPadOS 13+ reports itself as a Mac; it cannot be told apart here.
+  // iPadOS 13+, and any phone browser set to "desktop site", reports a desktop
+  // OS; that cannot be told apart here.
   [/Macintosh|Mac OS X/, "Mac"],
   [/CrOS/, "ChromeOS"],
   [/Linux/, "Linux"],
@@ -19,11 +22,12 @@ const OS: [RegExp, string][] = [
 // Order matters: Edge, Opera and Samsung Internet also claim "Chrome", and
 // every Chromium browser claims "Safari".
 const BROWSER: [RegExp, string][] = [
-  [/EdgA?\/|EdgiOS\//, "Edge"],
-  [/OPR\/|Opera/, "Opera"],
+  [/EdgA?\/|EdgiOS\/|Edge\//, "Edge"],
+  [/OPR\/|OPT\/|OPiOS\/|Opera/, "Opera"],
   [/SamsungBrowser\//, "Samsung Internet"],
   [/Firefox\/|FxiOS\//, "Firefox"],
   [/Chrome\/|CriOS\//, "Chrome"],
+  [/IEMobile\/|Trident\//, "Internet Explorer"],
   [/Safari\//, "Safari"],
 ];
 

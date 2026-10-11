@@ -613,6 +613,13 @@ export async function decideCorrection(args: {
 }
 
 /**
+ * How long an entry must have been running before its owner may close it with
+ * a stated end time. Before that it is an ordinary running shift, ended with the
+ * clock — which records how the punch arrived, while this path does not.
+ */
+export const RESOLVE_OPEN_AFTER_MS = 16 * 3_600_000;
+
+/**
  * Close a forgotten, still-running entry at a stated end time.
  *
  * This is the escape hatch from the lockout the review found: a partial unique
@@ -652,6 +659,9 @@ export async function resolveOpenEntry(args: {
   }
   if (original.end !== null) {
     throw new CorrectionError("Dieser Eintrag ist bereits abgeschlossen.");
+  }
+  if (!isAdmin && asOf.getTime() - original.start.getTime() <= RESOLVE_OPEN_AFTER_MS) {
+    throw new CorrectionError("Ein laufender Eintrag wird über „Ausstempeln“ beendet.");
   }
   if (end.getTime() <= original.start.getTime()) {
     throw new CorrectionError("Das Ende muss nach dem Beginn liegen.");

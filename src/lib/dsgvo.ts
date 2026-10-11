@@ -49,6 +49,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { REDACTED, redactAuditForSubject, writeAudit } from "@/lib/audit";
 import { hashPassword } from "@/lib/password";
+import { lockClock } from "@/lib/clock";
 import { UserError } from "@/lib/users";
 
 /** Full personal-data export for one subject (Art. 15). JSON-serializable. */
@@ -141,6 +142,11 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
 
   await prisma.$transaction(
     async (tx: Prisma.TransactionClient) => {
+      // First the person's clock lock: a punch already past its session check
+      // then either commits before the device labels are cleared below, or
+      // waits and finds the account inactive. Never a label written after.
+      await lockClock(tx, userId);
+
       // Ids of everything that belongs to this person. Audit rows about their
       // working time are keyed by the ENTRY id, not by the user id, so without
       // this collection those rows (and the notes copied into them) are

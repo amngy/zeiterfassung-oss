@@ -200,9 +200,10 @@ periodically — an untested backup is not a backup.
 - **Role-based access:** employees can only ever see their own data; admin
   routes are guarded server-side and re-validate the account on every write.
 - **No biometric data, no location tracking, no surveillance** — by design, to
-  stay out of Art. 9 / mandatory-DPIA territory. Each punch records only its
-  channel and a coarse device type ("iPhone · Safari"), so an admin can see how
-  a time was recorded; no device identifier, no IP, no location.
+  stay out of Art. 9 / mandatory-DPIA territory. Each punch records its
+  channel (browser, terminal, …). Recording a coarse device type as well
+  ("iPhone · Safari") is a setting, **off by default**; it never stores a device
+  identifier, an IP or a location, and stays out of the payroll exports.
 - **Works council:** an electronic time-recording system is a technical device
   under **§87(1) Nr. 6 BetrVG** — if the company has a Betriebsrat, its
   introduction (and changes such as new clock-in channels) need its agreement.

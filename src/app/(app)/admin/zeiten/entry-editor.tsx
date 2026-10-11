@@ -191,7 +191,7 @@ export function EntryEditor({ entries }: { entries: EditableEntry[] }) {
                   Gestempelt:{" "}
                   {e.punches.map((p) => `${p.edge} über ${p.via}`).join(" — ")}
                 </span>
-                <InfoHint>{`Wie Beginn und Ende erfasst wurden: Erfassungsweg und grob erkannter Gerätetyp. Die Geräteangabe meldet der Browser selbst und kann verfälscht werden — sie ist ein Hinweis, kein Beweis. Standortdaten werden nicht erfasst.`}</InfoHint>
+                <InfoHint>{`Wie Beginn und Ende erfasst wurden: Erfassungsweg und — falls in den Einstellungen aktiviert — der grob erkannte Gerätetyp. Die Geräteangabe meldet der Browser selbst; sie ist ein Hinweis, kein Beweis. Ein Handy mit der Browser-Option „Desktop-Website“ erscheint z. B. als Mac oder Linux. Nach einer Korrektur steht hier nichts mehr: die korrigierten Zeiten wurden nicht gestempelt. Standortdaten werden nicht erfasst.`}</InfoHint>
               </p>
             )}
 
