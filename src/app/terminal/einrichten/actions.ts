@@ -8,6 +8,7 @@ import {
   TERMINAL_COOKIE,
   TERMINAL_COOKIE_OPTIONS,
 } from "@/lib/terminals";
+import { clearSessionCookies } from "@/lib/session-cookies";
 
 export interface PairState {
   error?: string;
@@ -26,10 +27,8 @@ export async function pairTerminalAction(
     const { cookieValue } = await pairTerminal(code);
     const store = await cookies();
     // A shared device must not stay signed in as whoever set it up (often an
-    // admin who copied the link here): drop every Auth.js session cookie.
-    for (const c of store.getAll()) {
-      if (c.name.includes("authjs.session-token")) store.delete(c.name);
-    }
+    // admin who copied the link here).
+    clearSessionCookies(store);
     store.set(TERMINAL_COOKIE, cookieValue, TERMINAL_COOKIE_OPTIONS);
   } catch (e) {
     if (e instanceof TerminalError) return { error: e.message };
