@@ -10,7 +10,6 @@ import { Input, Select } from "@/components/ui/input";
 import type { AppSettings, RuleProfile } from "@/lib/settings";
 import {
   saveGeneralAction,
-  saveRoundingAction,
   saveRuleProfileAction,
   saveMinorRuleProfileAction,
   saveBreakPolicyAction,
@@ -87,7 +86,7 @@ export function GeneralForm({ s }: { s: AppSettings }) {
           label="Standard-Jahresurlaub (Tage)"
           htmlFor="g-vac"
           required
-          info={`Vollzeit-Jahresanspruch bei 5-Tage-Woche als Orientierung. Gesetzliches Minimum 20 Tage (BUrlG §3). Der Anspruch wird je Person im Profil gepflegt; neue Personen übernehmen diesen Wert derzeit nicht automatisch.`}
+          info={`Vollzeit-Jahresanspruch bei 5-Tage-Woche. Gesetzliches Minimum 20 Tage (BUrlG §3). Wird beim Anlegen einer Person vorgeschlagen; der Anspruch selbst wird je Person im Profil gepflegt (bei Teilzeit dort umrechnen).`}
         >
           <Input id="g-vac" name="defaultVacationDays" type="number" step="0.5" min={0} max={365} defaultValue={s.defaultVacationDays} />
         </Field>
@@ -124,39 +123,11 @@ export function GeneralForm({ s }: { s: AppSettings }) {
           htmlFor="g-au"
           required
           hint="EFZG §5: Standard 4"
-          info={`Ab welchem Krankheitstag eine AU/eAU verlangt wird. EFZG §5: gesetzlich spätestens ab Tag 4, früher zulässig. Hinweis: Der Wert dient als Vorgabe und wird derzeit nicht automatisch erzwungen.`}
+          info={`Ab welchem Krankheitstag (Kalendertage) eine AU/eAU verlangt wird. EFZG §5: gesetzlich spätestens ab Tag 4, früher zulässig. Krankmeldungen, die diesen Tag erreichen und für die noch keine AU vermerkt ist, erscheinen unter Abwesenheiten als „AU fällig“.`}
         >
           <Input id="g-au" name="auRequiredFromDay" type="number" min={1} max={14} defaultValue={s.auRequiredFromDay} />
         </Field>
       </div>
-      <Banner state={state} />
-      <div className="flex justify-end">
-        <Button type="submit" disabled={pending}>
-          Speichern
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-export function RoundingForm({ s }: { s: AppSettings }) {
-  const [state, action, pending] = useActionState<SettingsState, FormData>(saveRoundingAction, {});
-  return (
-    <form action={action} className="space-y-4">
-      <Check2
-        name="enabled"
-        label="Rundung aktivieren"
-        defaultChecked={s.rounding.enabled}
-        info={`Soll das Runden erfasster Zeiten auf ein Intervall aktivieren. Hinweis: Die Rundung ist derzeit ohne Wirkung (noch nicht umgesetzt); zudem darf sie nicht systematisch zu Lasten der Beschäftigten gehen.`}
-      />
-      <Field
-        label="Rundungsintervall (Minuten)"
-        htmlFor="rd-inc"
-        hint="0 = aus, z. B. 15"
-        info={`Intervall in Minuten für die (derzeit noch nicht umgesetzte) Rundung; 0 = aus, z. B. 15. Rundung darf nicht dauerhaft zu Lasten der Beschäftigten wirken.`}
-      >
-        <Input id="rd-inc" name="incrementMinutes" type="number" min={0} max={60} defaultValue={s.rounding.incrementMinutes} className="max-w-xs" />
-      </Field>
       <Banner state={state} />
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>

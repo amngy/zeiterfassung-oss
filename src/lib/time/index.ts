@@ -7,6 +7,7 @@ export * from "./duration";
 export * from "./schedule";
 export * from "./vacation";
 export * from "./absence";
+export * from "./sick-note";
 export * from "./remote-review";
 export * from "./day";
 export * from "./format";
