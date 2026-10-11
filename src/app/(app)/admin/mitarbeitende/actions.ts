@@ -12,6 +12,7 @@ import {
   resetUserPassword,
 } from "@/lib/users";
 import { anonymizeUser } from "@/lib/dsgvo";
+import { TwoFactorError, resetTwoFactor } from "@/lib/two-factor";
 import {
   createUserSchema,
   updateUserSchema,
@@ -183,6 +184,21 @@ export async function toggleActiveAction(formData: FormData): Promise<void> {
     redirect(`/admin/mitarbeitende/${userId}?fehler=${encodeURIComponent(e.message)}`);
   }
   refresh(userId);
+}
+
+/** Removes someone's second factor (lost phone); they set it up again (#14). */
+export async function resetTwoFactorAction(formData: FormData): Promise<void> {
+  const admin = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  if (!userId) return;
+  try {
+    await resetTwoFactor({ actorId: admin.id, userId });
+  } catch (e) {
+    if (!(e instanceof TwoFactorError)) throw e;
+    redirect(`/admin/mitarbeitende/${userId}?fehler=${encodeURIComponent(e.message)}`);
+  }
+  refresh(userId);
+  redirect(`/admin/mitarbeitende/${userId}?ok=1`);
 }
 
 export async function anonymizeUserAction(formData: FormData): Promise<void> {

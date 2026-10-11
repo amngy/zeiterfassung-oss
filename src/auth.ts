@@ -10,6 +10,8 @@ import {
   recordFailedLogin,
   recordSuccessfulLogin,
 } from "@/lib/auth-throttle";
+import { verifySecondFactor } from "@/lib/two-factor";
+import { SecondFactorBlocked, SecondFactorInvalid, SecondFactorRequired } from "@/lib/auth-errors";
 
 /**
  * Decoy hash, verified against whenever there is no real hash to verify.
@@ -39,6 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "E-Mail", type: "email" },
         password: { label: "Passwort", type: "password" },
+        code: { label: "Code", type: "text" },
       },
       authorize: async (raw, request) => {
         const parsed = credentialsSchema.safeParse(raw);
@@ -79,6 +82,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // count against the source but must never extend an existing lock.
           await recordFailedLogin({ userId: candidate?.id ?? null, ip });
           return null;
+        }
+
+        // Second factor (#14), checked in the same request as the password so
+        // there is no half-signed-in state. Reaching this line already tells
+        // the caller the password was right — inherent to any second step.
+        // Wrong codes are counted per account inside verifySecondFactor.
+        if (candidate.totpEnabledAt) {
+          const code = parsed.data.code?.trim();
+          if (!code) throw new SecondFactorRequired();
+          const result = await verifySecondFactor(candidate.id, code);
+          if (result === "blocked") throw new SecondFactorBlocked();
+          if (result !== "ok") throw new SecondFactorInvalid();
         }
 
         await recordSuccessfulLogin({ userId: candidate.id, ip });

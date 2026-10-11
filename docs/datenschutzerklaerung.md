@@ -98,7 +98,11 @@ Zudem besteht ein **Beschwerderecht** bei einer Aufsichtsbehörde
 ## 7. Datensicherheit
 
 Übertragung ausschließlich verschlüsselt (HTTPS). Passwörter werden mit einem
-modernen Verfahren (argon2id) gehasht. Zugriffe sind rollenbasiert beschränkt;
+modernen Verfahren (argon2id) gehasht. Konten mit Verwaltungsrechten melden
+sich zusätzlich mit einem Code aus einer Authenticator-App an
+(Zwei-Faktor-Anmeldung); für alle anderen ist sie freiwillig. Gespeichert werden
+dafür der geheime Schlüssel der App-Verknüpfung und Prüfwerte (Hashes) der
+Wiederherstellungscodes. Zugriffe sind rollenbasiert beschränkt;
 administrative und korrigierende Vorgänge werden manipulationssicher
 protokolliert (revisionssichere, fortlaufende Protokollierung). Es gelten
 geeignete technische und organisatorische Maßnahmen nach Art. 32 DSGVO.

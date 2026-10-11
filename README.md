@@ -195,6 +195,11 @@ periodically — an untested backup is not a backup.
 
 - Passwords hashed with **argon2id**; minimum-strength policy enforced on change.
 - **Login lockout** after repeated failures (`src/lib/auth-throttle.ts`).
+- **Second factor (TOTP)** required for admins, optional for everyone else
+  (`src/lib/two-factor.ts`, *Mein Konto → Zwei-Faktor-Anmeldung*). Until an
+  admin has set it up, their account acts as an employee account. Ten one-time
+  recovery codes; an admin can reset another person's second factor, and for
+  the last admin there is `npm run db:reset-two-factor -- <e-mail> --yes`.
 - **HttpOnly / Secure / SameSite=Lax** session cookies (Auth.js).
 - **CSRF:** server actions are same-origin-protected by Next.js; mutations go
   through server actions / guarded route handlers, never unauthenticated GETs.

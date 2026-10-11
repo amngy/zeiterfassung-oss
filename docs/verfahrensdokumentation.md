@@ -235,6 +235,17 @@ mit Stichtag und Anzahl je Art protokolliert, ohne Inhalte. In älteren
 Sicherungen bleiben gelöschte Daten bis zu deren Rotation erhalten. Datensparsamkeit (keine Biometrie, kein Standort,
 keine Gerätekennung), HTTPS, argon2id-Hashing, Login-Sperre, Sicherheits-Header.
 
+Konten mit Verwaltungsrechten brauchen eine Zwei-Faktor-Anmeldung (Code aus
+einer Authenticator-App, TOTP nach RFC 6238); bis sie eingerichtet ist, wirkt
+das Konto wie ein Mitarbeitendenkonto und sieht keine Daten anderer. Jeder Code
+gilt einmal; nach fünf falschen Codes ist die Anmeldung 15 Minuten gesperrt.
+Für verlorene Handys gibt es zehn einmalige Wiederherstellungscodes. Sind auch
+diese weg, setzt ein anderes Administrationskonto die Zwei-Faktor-Anmeldung
+zurück, für das letzte Administrationskonto das Skript
+`prisma/reset-two-factor.ts` (Zugriff auf den Server nötig). Einrichten,
+Abschalten, Zurücksetzen und die Anmeldung mit einem Wiederherstellungscode
+werden protokolliert.
+
 Jede Stempelung wird zusätzlich als Stempelereignis mit Zeitpunkt und
 Erfassungsweg (z. B. Browser) gespeichert. Ist in den Einstellungen „Gerätetyp
 beim Stempeln erfassen“ aktiviert (Voreinstellung: aus), kommt der grob
