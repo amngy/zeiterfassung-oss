@@ -61,7 +61,7 @@ async function loadEditableEntries(
       source: true, note: true,
       clockEvents: {
         orderBy: { at: "asc" },
-        select: { kind: true, channel: true, deviceLabel: true },
+        select: { kind: true, channel: true, deviceLabel: true, terminal: { select: { label: true } } },
       },
     },
   });
