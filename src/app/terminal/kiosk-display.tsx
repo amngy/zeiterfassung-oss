@@ -10,10 +10,11 @@ import { BRAND } from "@/config/brand";
 
 const ACCEPTED_AFTER_CHANGE_MS = 60_000;
 const RETRY_MS = 5_000;
+const FETCH_TIMEOUT_MS = 8_000;
 
 type Status = "loading" | "ok" | "offline" | "unpaired";
 
-export function KioskDisplay({ label }: { label: string }) {
+export function KioskDisplay({ label, signedInWarning }: { label: string; signedInWarning: boolean }) {
   const [svg, setSvg] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<Status>("loading");
   const [now, setNow] = React.useState(() => new Date());
@@ -21,10 +22,14 @@ export function KioskDisplay({ label }: { label: string }) {
 
   React.useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let expiry: ReturnType<typeof setTimeout> | undefined;
     let stopped = false;
     async function load() {
       try {
-        const res = await fetch("/terminal/code", { cache: "no-store" });
+        const res = await fetch("/terminal/code", {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
         if (res.status === 401) {
           setStatus("unpaired");
           setSvg(null);
@@ -35,6 +40,10 @@ export function KioskDisplay({ label }: { label: string }) {
         setSvg(data.svg);
         setStatus("ok");
         validUntil.current = Date.now() + data.changesInMs + ACCEPTED_AFTER_CHANGE_MS;
+        // Whatever happens to the next fetch, never show a code past the point
+        // where the server would refuse it.
+        clearTimeout(expiry);
+        expiry = setTimeout(() => setSvg(null), validUntil.current - Date.now() - RETRY_MS);
         if (!stopped) timer = setTimeout(load, data.changesInMs + 250);
       } catch {
         setStatus("offline");
@@ -46,6 +55,7 @@ export function KioskDisplay({ label }: { label: string }) {
     return () => {
       stopped = true;
       clearTimeout(timer);
+      clearTimeout(expiry);
     };
   }, []);
 
@@ -91,6 +101,12 @@ export function KioskDisplay({ label }: { label: string }) {
 
   return (
     <main className="flex min-h-screen flex-col bg-teal text-white">
+      {signedInWarning && (
+        <p className="bg-danger px-6 py-2 text-center text-sm font-medium text-white">
+          Auf diesem Gerät ist noch ein Benutzerkonto angemeldet. Bitte abmelden — das Terminal ist
+          für alle zugänglich.
+        </p>
+      )}
       <header className="flex items-center justify-between px-6 py-4">
         <span className="text-lg font-medium">{BRAND.appName}</span>
         <span className="text-sm opacity-80">{label}</span>
