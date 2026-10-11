@@ -23,11 +23,15 @@ verarbeitet werden insbesondere:
   Status der Schwerbehinderung (für den gesetzlichen Zusatzurlaub).
 - Arbeitszeitdaten: Beginn, Ende und Dauer von Arbeits- und Pausenzeiten,
   Korrekturen und deren Begründungen; je Stempelung der Erfassungsweg
-  (z. B. Browser). [Nur falls aktiviert:] zusätzlich der grob erkannte
+  (z. B. Browser oder QR-Code am Terminal, dann mit der Bezeichnung des
+  Terminals, z. B. „Eingang“). [Nur falls aktiviert:] zusätzlich der grob erkannte
   Gerätetyp (z. B. „iPhone · Safari“) — ohne eindeutige Gerätekennung und ohne
   Standort.
 - Abwesenheiten: Urlaub und Krankheitszeiten (inkl. Vorliegen einer AU-
-  Bescheinigung als Ja/Nein-Kennzeichen — **keine Diagnosedaten**).
+  Bescheinigung als Ja/Nein-Kennzeichen — **keine Diagnosedaten**) sowie
+  Sonderurlaub, Fortbildung, Dienstreise, Freizeitausgleich, unbezahlter Urlaub,
+  Elternzeit, Mutterschutz und „Kind krank“ (§ 45 SGB V), jeweils nur Art und
+  Zeitraum.
 - Protokolldaten zu Änderungen (Wer, Wann, Was, Alt→Neu, Grund).
 
 Es findet **keine** biometrische Erfassung, **keine** Standortverfolgung und
@@ -68,11 +72,15 @@ gesetzlichen Aufbewahrungsfristen gespeichert. Mehrere Fristen überlagern sich:
 - lohn-/steuerrelevante Daten: ggf. bis zu **~10 Jahre**.
 
 Die in der Anwendung hinterlegte Aufbewahrungsfrist ist konfigurierbar
-(Voreinstellung: 4 Jahre). Nach Ablauf wird der Datensatz **deaktiviert und
-anonymisiert** (statt sofort gelöscht), soweit keine Frist mehr entgegensteht.
+(Voreinstellung: 4 Jahre, mindestens 2) und läuft ab dem Ende des
+Kalenderjahres, in dem ein Datensatz entstanden ist. Nach Ablauf werden Zeiten,
+Abwesenheiten, Anträge, Urlaubsjahre und Protokolleinträge **gelöscht**; Konten
+ausgeschiedener Beschäftigter werden **anonymisiert**. Die Löschung stößt die
+Verwaltung an (Verwaltung → Aufbewahrung), sie läuft nicht automatisch.
 
 Für den Gerätetyp einer Stempelung besteht keine Aufbewahrungspflicht. Er wird
-derzeit mit dem Zeiteintrag gespeichert und bei der Anonymisierung entfernt.
+derzeit mit dem Zeiteintrag gespeichert und mit ihm bzw. bei der
+Anonymisierung entfernt.
 [Kürzere Frist festlegen, z. B. … Monate.]
 
 ## 6. Rechte der betroffenen Personen

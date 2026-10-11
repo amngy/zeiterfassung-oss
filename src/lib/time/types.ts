@@ -50,15 +50,26 @@ export interface EntryInput {
 /** How a public/gifted holiday reduces a day's expected hours. */
 export type HolidayEffect = "FULL" | "HALF";
 
-/** The two kinds of recorded absence. Mirrors the AbsenceType enum. */
-export type AbsenceKind = "VACATION" | "SICK";
+/** The kinds of recorded absence. Mirrors the AbsenceType enum; see absence-kinds.ts. */
+export type AbsenceKind =
+  | "VACATION"
+  | "SICK"
+  | "SPECIAL_LEAVE"
+  | "TRAINING"
+  | "BUSINESS_TRIP"
+  | "TIME_OFF_IN_LIEU"
+  | "UNPAID_LEAVE"
+  | "PARENTAL_LEAVE"
+  | "MATERNITY_PROTECTION"
+  | "CHILD_SICK";
 
 /**
  * An approved absence covering (part of) one calendar day.
  *
- * A holiday REDUCES the expected hours; an absence does not — the hours stay
+ * A holiday REDUCES the expected hours; paid absence does not — the hours stay
  * owed and are CREDITED instead, so the month's Soll still shows the contract
- * and the day comes out level rather than as undertime. `fraction` is the share
+ * and the day comes out level rather than as undertime. (Unpaid kinds such as
+ * Elternzeit do drop the Soll; see ABSENCE_TREATMENT.) `fraction` is the share
  * of the day the absence covers: 1 for a whole day, 0.5 for a half-day edge of
  * a holiday (the same 0.5 that was charged to the leave account).
  */

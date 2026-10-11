@@ -3,6 +3,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import type { Role } from "@prisma/client";
 
+/**
+ * Where a valid JWT goes when its account is gone or deactivated. Not /login:
+ * the proxy only sees the JWT and would send it straight back (redirect loop).
+ */
+const SESSION_ENDED = "/sitzung-beendet";
+
 export interface SessionUser {
   id: string;
   name: string;
@@ -67,7 +73,7 @@ export async function requireUser(): Promise<SessionUser> {
   // everyone's times, absences and the audit trail) until the token expired.
   // There is no server-side session store, so nothing else can revoke it.
   const fresh = await prisma.user.findUnique({ where: { id: user.id }, select: FRESH });
-  if (!fresh || !fresh.active) redirect("/login");
+  if (!fresh || !fresh.active) redirect(SESSION_ENDED);
   return withEffectiveRole(user.id, fresh);
 }
 
@@ -82,7 +88,7 @@ export async function requireUser(): Promise<SessionUser> {
 export async function requireActiveUser(): Promise<SessionUser> {
   const user = await sessionUser();
   const fresh = await prisma.user.findUnique({ where: { id: user.id }, select: FRESH });
-  if (!fresh || !fresh.active) redirect("/login");
+  if (!fresh || !fresh.active) redirect(SESSION_ENDED);
   return withEffectiveRole(user.id, fresh);
 }
 

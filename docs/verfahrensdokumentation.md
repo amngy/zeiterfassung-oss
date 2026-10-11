@@ -32,6 +32,15 @@ Eintrag und unplausibel lange offene Schichten werden gekennzeichnet und müssen
 über den regulären Korrekturweg aufgelöst werden — es wird **niemals automatisch
 ein Ende geraten oder still geschlossen**.
 
+Gestempelt wird im Browser oder per **QR-Code an einem Terminal** (z. B. Tablet
+am Eingang): Das Terminal zeigt einen Code, der alle 30 Sekunden wechselt und
+serverseitig signiert ist; er wird höchstens 90 Sekunden lang angenommen. Die
+Mitarbeitenden scannen ihn mit dem eigenen, angemeldeten Handy. Der Zeitpunkt
+stammt in jedem Fall von der Serveruhr. Eine QR-Stempelung ist ein Hinweis auf
+Anwesenheit, kein Beweis: ein laufend weitergeleitetes Foto des Codes lässt sich
+technisch nicht ausschließen. Terminals werden von der Administration
+gekoppelt und deaktiviert (protokolliert).
+
 ### 3.1 Pausenautomatik
 
 Für Pausen gilt eine Ausnahme von der Regel „nichts ergänzen", weil das Unterlassen
@@ -105,7 +114,8 @@ und Entfernen der Ausnahme wird protokolliert.
   ohne dass die Zeit doppelt gewertet würde. Auch hier gilt Begründungspflicht.
 - Jede Erstellung/Korrektur/Entscheidung wird mit **Akteur, Zeitpunkt, Alt-Wert,
   Neu-Wert und Pflicht-Begründung** in einem **append-only-Protokoll** festgehalten.
-  Das Protokoll kennt keine Änderungs- oder Löschfunktion.
+  Das Protokoll kennt keine Änderungsfunktion; gelöscht werden Einträge nur nach
+  Ablauf der Aufbewahrungsfrist (Abschnitt 8), und auch das wird protokolliert.
 
 ## 5. Regelprüfungen (ArbZG)
 
@@ -148,10 +158,25 @@ wird mit derselben Logik wie die Sollzeit berechnet (Feiertage/Teilzeit/halbe
 Tage einheitlich). Krankheit wird getrennt geführt und mindert den Urlaub nicht;
 § 9 BUrlG (Krankheit im Urlaub) wird über eine geprüfte Gutschrift abgebildet.
 
+Neben Urlaub und Krankheit gibt es weitere Abwesenheitsarten, die wie Urlaub
+beantragt und genehmigt werden; nur Urlaub belastet das Urlaubskonto:
+
+| Art | Wirkung im Zeitkonto |
+|---|---|
+| Sonderurlaub, Fortbildung, Dienstreise | Gutschrift wie Urlaub (Sollzeit wird ausgeglichen) |
+| Freizeitausgleich | keine Gutschrift — das Tagessoll wird aus dem Überstundensaldo genommen |
+| unbezahlter Urlaub, Elternzeit, Mutterschutz, „Kind krank“ (§ 45 SGB V) | die Sollzeit entfällt anteilig (wie an einem Feiertag); keine Gutschrift, keine Minusstunden |
+
+Überschneiden sich zwei Abwesenheiten, entscheidet Elternzeit/Mutterschutz/
+unbezahlter Urlaub vor Krankheit und Krankheit vor allen übrigen Arten.
+„Kind krank“-Tage werden je Kalenderjahr gezählt und angezeigt; eine gesetzliche
+Höchstzahl wird nicht erzwungen.
+
 ### 6.1 Bewertung im Zeitkonto
 
 Ein **Feiertag senkt** die Sollzeit — an ihm ist keine Arbeit geschuldet.
-Genehmigter Urlaub und erfasste Krankheit werden dagegen **gutgeschrieben**: Die
+Genehmigter Urlaub und erfasste Krankheit (und die übrigen bezahlten Arten, siehe
+Tabelle oben) werden dagegen **gutgeschrieben**: Die
 Sollzeit des Tages bleibt bestehen und wird bis zu ihrer Höhe als Abwesenheitszeit
 ausgeglichen (Entgeltfortzahlung, §11 BUrlG / §3 EFZG). Damit weist der Monat
 weiterhin die vertragliche Sollzeit aus, die Gutschrift erscheint als eigene Größe
@@ -199,7 +224,15 @@ zugriffsgeschützte Endpunkte ausschließlich von Administrator:innen erzeugt.
 ## 8. Aufbewahrung, Datenschutz, Sicherung
 
 Aufbewahrung gemäß gesetzlicher Fristen (siehe Datenschutzerklärung /
-Verarbeitungsverzeichnis). Datensparsamkeit (keine Biometrie, kein Standort,
+Verarbeitungsverzeichnis). Die Frist (Einstellungen, mindestens 2 Jahre) läuft
+ab dem Ende des Kalenderjahres. Unter Verwaltung → Aufbewahrung zeigt die
+Anwendung, wie viele Datensätze vor dem Stichtag liegen, und löscht sie nach
+Bestätigung (Eingabe „LÖSCHEN“) in einem Vorgang: Zeiteinträge samt
+Stempelereignissen, Korrekturanträge, Abwesenheiten, Urlaubsjahre und
+Protokolleinträge. Deaktivierte Konten mit Austrittsdatum vor dem Stichtag
+werden anonymisiert. Arbeitszeitmodelle und Feiertage bleiben. Der Vorgang wird
+mit Stichtag und Anzahl je Art protokolliert, ohne Inhalte. In älteren
+Sicherungen bleiben gelöschte Daten bis zu deren Rotation erhalten. Datensparsamkeit (keine Biometrie, kein Standort,
 keine Gerätekennung), HTTPS, argon2id-Hashing, Login-Sperre, Sicherheits-Header.
 
 Konten mit Verwaltungsrechten brauchen eine Zwei-Faktor-Anmeldung (Code aus
@@ -219,7 +252,15 @@ beim Stempeln erfassen“ aktiviert (Voreinstellung: aus), kommt der grob
 erkannte Gerätetyp hinzu (z. B. „iPhone · Safari“). Er dient der
 Plausibilitätsprüfung und ist nur in der Administrationsansicht „Alle Zeiten“
 sichtbar, nicht in den Exporten zur Lohnabrechnung. Vor der Aktivierung ist
-der Betriebsrat zu beteiligen (§ 87 Abs. 1 Nr. 6 BetrVG). Sicherung
+der Betriebsrat zu beteiligen (§ 87 Abs. 1 Nr. 6 BetrVG).
+
+Endet ein Arbeitstag mit einem Ausstempeln über den Webzugang und liegt der Tag
+mehr als die eingestellten Minuten (Voreinstellung 60, 0 = aus) über dem Soll,
+erscheint er unter „Korrekturen“ zur Prüfung. Der Hinweis wird bei jedem Aufruf
+aus den gespeicherten Zeiten berechnet; gespeichert wird nur die Bestätigung
+„geprüft“ (wer, wann) samt Protokolleintrag. Die Zeiten selbst bleiben
+unverändert, und die betroffene Person sieht den Status in ihren Zeiten. Auch
+hierfür gilt § 87 Abs. 1 Nr. 6 BetrVG. Sicherung
 über die verwaltete Datenbank zzgl. regelmäßiger `pg_dump`-Kopien (siehe README).
 
 ## 9. Änderungen an dieser Dokumentation

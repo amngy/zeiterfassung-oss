@@ -8,7 +8,7 @@ import { Field } from "@/components/ui/field";
 import { InfoHint } from "@/components/ui/info-hint";
 import { Input } from "@/components/ui/input";
 
-export function LoginForm() {
+export function LoginForm({ next }: { next: string | null }) {
   const [state, formAction, pending] = useActionState<
     LoginState | undefined,
     FormData
@@ -34,6 +34,7 @@ export function LoginForm() {
       className="mt-8 space-y-5"
       aria-label="Anmeldung"
     >
+      {next && <input type="hidden" name="next" value={next} />}
       {state?.error && (
         <div
           role="alert"

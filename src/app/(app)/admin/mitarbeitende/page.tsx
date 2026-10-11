@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { requireAdmin } from "@/lib/session";
 import { listUsersWithDetails } from "@/lib/users";
+import { getAppSettings } from "@/lib/settings";
 import {
   Card,
   CardContent,
@@ -17,7 +18,7 @@ export const metadata: Metadata = { title: "Mitarbeitende" };
 
 export default async function AdminEmployeesPage() {
   await requireAdmin();
-  const users = await listUsersWithDetails();
+  const [users, settings] = await Promise.all([listUsersWithDetails(), getAppSettings()]);
   const activeCount = users.filter((u) => u.active).length;
 
   return (
@@ -108,7 +109,7 @@ export default async function AdminEmployeesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CreateUserForm />
+          <CreateUserForm defaultVacationDays={settings.defaultVacationDays} />
         </CardContent>
       </Card>
     </div>

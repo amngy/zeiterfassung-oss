@@ -16,6 +16,8 @@ import {
   type Violation,
 } from "@/lib/time";
 import type { RawEntryRow } from "./csv";
+import { ABSENCE_LABEL } from "@/lib/time/absence-kinds";
+import type { AbsenceKind } from "@/lib/time/types";
 
 const HOUR_MS = 3_600_000;
 
@@ -66,7 +68,7 @@ export interface MonthlyReport {
   days: ReportDayRow[];
   totals: ReportTotals;
   violations: Violation[];
-  absences: { type: "VACATION" | "SICK"; from: string; to: string; days: number; note: string | null }[];
+  absences: { type: AbsenceKind; from: string; to: string; days: number; note: string | null }[];
   generatedAtKey: string;
   companyName: string;
   /** The period contains an unresolved open entry (forgotten clock-out). */
@@ -251,7 +253,7 @@ export async function buildMonthlyReport(
     const aFrom = fmtKey(a.startDate);
     const aTo = fmtKey(a.endDate);
     const label =
-      a.type === "SICK" ? "Krank" : a.status === "APPROVED" ? "Urlaub" : "Urlaub (offen)";
+      `${ABSENCE_LABEL[a.type]}${a.status === "APPROVED" ? "" : " (offen)"}`;
     for (const d of timesheet.period.days) {
       if (d.date >= aFrom && d.date <= aTo) absenceByDay.set(d.date, label);
     }

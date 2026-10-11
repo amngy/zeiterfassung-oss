@@ -63,7 +63,11 @@ export async function exportUserData(userId: string): Promise<unknown> {
 
   const [timeEntries, clockEvents, corrections, absences] = await Promise.all([
     prisma.timeEntry.findMany({ where: { userId }, orderBy: { start: "asc" } }),
-    prisma.clockEvent.findMany({ where: { userId }, orderBy: { at: "asc" } }),
+    prisma.clockEvent.findMany({
+      where: { userId },
+      orderBy: { at: "asc" },
+      include: { terminal: { select: { label: true } } },
+    }),
     prisma.correctionRequest.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
     prisma.absence.findMany({ where: { userId }, orderBy: { startDate: "asc" } }),
   ]);
