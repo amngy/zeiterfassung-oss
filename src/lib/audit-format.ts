@@ -109,6 +109,7 @@ const DESTRUCTIVE = new Set<string>([
   "user.deactivate",
   "user.anonymize",
   "holiday.delete",
+  "retention.purge",
 ]);
 
 // ── Action → friendly label + category ───────────────────────────────────────
@@ -124,6 +125,7 @@ const ACTIONS: Record<string, ActionMeta> = {
   "timeentry.correct": { label: "Eintrag korrigiert", category: "zeit" },
   "timeentry.break-remove": { label: "Pause entfernt (laut Angabe)", category: "zeit" },
   "timeentry.remove": { label: "Eintrag aus der Wertung genommen", category: "zeit" },
+  "punch.review": { label: "Stempelung von unterwegs geprüft", category: "zeit" },
 
   // Korrekturen
   "correction.submit": { label: "Korrektur beantragt", category: "korrektur" },
@@ -175,6 +177,9 @@ const ACTIONS: Record<string, ActionMeta> = {
   "terminal.pair": { label: "Terminal gekoppelt", category: "einstellung" },
   "terminal.activate": { label: "Terminal aktiviert", category: "einstellung" },
   "terminal.deactivate": { label: "Terminal deaktiviert", category: "einstellung" },
+
+  // System
+  "retention.purge": { label: "Abgelaufene Daten gelöscht (Aufbewahrung)", category: "system" },
 };
 
 /** Turn a raw dotted action key into a readable "Foo · Bar" fallback label. */
@@ -274,6 +279,24 @@ function boolDe(v: unknown): string {
 /** A day count with the correct singular/plural noun: "1 Tag", "5 Tage". */
 function daysLabel(n: number): string {
   return `${formatDays(n)} ${n === 1 ? "Tag" : "Tage"}`;
+}
+
+/** "vor 01.01.2022 · 120 Zeiteinträge, 3 Abwesenheiten, …" — counts only. */
+function retentionText(v: unknown): string | undefined {
+  const o = asObj(v);
+  const cutoff = o && asStr(o.cutoff);
+  if (!o || !cutoff) return undefined;
+  const parts = (
+    [
+      ["timeEntries", "Zeiteinträge"],
+      ["clockEvents", "Stempelereignisse"],
+      ["corrections", "Korrekturanträge"],
+      ["absences", "Abwesenheiten"],
+      ["vacationYears", "Urlaubsjahre"],
+      ["auditEntries", "Protokolleinträge"],
+    ] as const
+  ).map(([k, label]) => `${asNum(o[k]) ?? 0} ${label}`);
+  return `vor ${shortDate(cutoff)} · ${parts.join(", ")}`;
 }
 
 // ── Change summary ───────────────────────────────────────────────────────────
@@ -548,6 +571,8 @@ export function summarizeDetail(
       return { text: holidayText(newValue) };
     case "holiday.delete":
       return { text: holidayText(oldValue) };
+    case "retention.purge":
+      return { text: retentionText(newValue) };
 
     // No meaningful payload — the label (and reason, where present) says it all:
     // correction.approve/reject, absence.withdraw, user.password.*,

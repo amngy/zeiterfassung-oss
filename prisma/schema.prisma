@@ -145,6 +145,7 @@ model User {
   schedules      WorkSchedule[]
   timeEntries    TimeEntry[]
   clockEvents    ClockEvent[]
+  punchReviews   PunchReview[] @relation("PunchReviewer")
   absences       Absence[]
   corrections    CorrectionRequest[]
   vacationYears  VacationYear[]
@@ -230,6 +231,7 @@ model ClockEvent {
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   timeEntry TimeEntry      @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
   terminal  ClockTerminal? @relation(fields: [terminalId], references: [id])
+  review    PunchReview?
 
   @@index([userId, at])
   @@index([timeEntryId])
@@ -255,6 +257,19 @@ model ClockTerminal {
   createdAt     DateTime  @default(now())
 
   clockEvents ClockEvent[]
+}
+
+// An admin's sign-off on a punch flagged for review (#32): a remote clock-out
+// that closed a day running clearly over its schedule. The flag itself is
+// computed from the stored punches and entries; only the review is kept.
+model PunchReview {
+  id           String   @id @default(cuid())
+  clockEventId String   @unique
+  reviewedById String?
+  reviewedAt   DateTime @default(now())
+
+  clockEvent ClockEvent @relation(fields: [clockEventId], references: [id], onDelete: Cascade)
+  reviewedBy User?      @relation("PunchReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 }
 
 // Employee or admin request to create/change a record. Approval-gated.

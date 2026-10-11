@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { describePunch } from "@/lib/clock";
 import { getTimesheet } from "@/lib/timesheet";
+import { findRemoteReviewFlags, reviewStateByDay } from "@/lib/punch-review";
 import {
   addDaysToKey,
   berlinDayKey,
@@ -121,6 +122,12 @@ export default async function AdminTimesheetsPage({
       ])
     : [null, []];
 
+  const reviewDays = timesheet
+    ? reviewStateByDay(
+        await findRemoteReviewFlags({ fromKey: from, toKey: to, userId: selectedId, period: timesheet.period }),
+      )
+    : {};
+
   const linkFor = (m: string) => `/admin/zeiten?user=${selectedId}&monat=${m}`;
 
   return (
@@ -235,7 +242,7 @@ export default async function AdminTimesheetsPage({
             </div>
           )}
 
-          <TimesheetTable period={timesheet.period} violations={timesheet.violations} />
+          <TimesheetTable period={timesheet.period} violations={timesheet.violations} reviewDays={reviewDays} />
           <ViolationList violations={timesheet.violations} />
 
           {/* ── Per-entry admin override ── */}

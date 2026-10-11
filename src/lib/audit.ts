@@ -4,7 +4,9 @@
 // anonymisation/erasure (DSGVO Art. 17 vs. retention duties).
 //
 // There is intentionally no update helper and no delete helper — the trail is
-// write-once, with ONE narrow exception: `redactAuditForSubject` below, which
+// write-once, with two narrow exceptions. The retention purge (@/lib/retention)
+// deletes whole rows once their retention period has ended, and records that it
+// did. And `redactAuditForSubject` below, which
 // DSGVO Art. 17 requires. It never deletes a row and never touches `action`,
 // `targetType`, `targetId`, `actorUserId` or `createdAt`; it only overwrites the
 // personal data inside `oldValue`/`newValue`/`reason` with a marker, so the log
