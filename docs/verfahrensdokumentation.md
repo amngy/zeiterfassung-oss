@@ -105,7 +105,8 @@ und Entfernen der Ausnahme wird protokolliert.
   ohne dass die Zeit doppelt gewertet würde. Auch hier gilt Begründungspflicht.
 - Jede Erstellung/Korrektur/Entscheidung wird mit **Akteur, Zeitpunkt, Alt-Wert,
   Neu-Wert und Pflicht-Begründung** in einem **append-only-Protokoll** festgehalten.
-  Das Protokoll kennt keine Änderungs- oder Löschfunktion.
+  Das Protokoll kennt keine Änderungsfunktion; gelöscht werden Einträge nur nach
+  Ablauf der Aufbewahrungsfrist (Abschnitt 8), und auch das wird protokolliert.
 
 ## 5. Regelprüfungen (ArbZG)
 
@@ -199,7 +200,15 @@ zugriffsgeschützte Endpunkte ausschließlich von Administrator:innen erzeugt.
 ## 8. Aufbewahrung, Datenschutz, Sicherung
 
 Aufbewahrung gemäß gesetzlicher Fristen (siehe Datenschutzerklärung /
-Verarbeitungsverzeichnis). Datensparsamkeit (keine Biometrie, kein Standort,
+Verarbeitungsverzeichnis). Die Frist (Einstellungen, mindestens 2 Jahre) läuft
+ab dem Ende des Kalenderjahres. Unter Verwaltung → Aufbewahrung zeigt die
+Anwendung, wie viele Datensätze vor dem Stichtag liegen, und löscht sie nach
+Bestätigung (Eingabe „LÖSCHEN“) in einem Vorgang: Zeiteinträge samt
+Stempelereignissen, Korrekturanträge, Abwesenheiten, Urlaubsjahre und
+Protokolleinträge. Deaktivierte Konten mit Austrittsdatum vor dem Stichtag
+werden anonymisiert. Arbeitszeitmodelle und Feiertage bleiben. Der Vorgang wird
+mit Stichtag und Anzahl je Art protokolliert, ohne Inhalte. In älteren
+Sicherungen bleiben gelöschte Daten bis zu deren Rotation erhalten. Datensparsamkeit (keine Biometrie, kein Standort,
 keine Gerätekennung), HTTPS, argon2id-Hashing, Login-Sperre, Sicherheits-Header.
 
 Jede Stempelung wird zusätzlich als Stempelereignis mit Zeitpunkt und
