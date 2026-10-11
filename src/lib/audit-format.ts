@@ -124,6 +124,7 @@ const ACTIONS: Record<string, ActionMeta> = {
   "timeentry.correct": { label: "Eintrag korrigiert", category: "zeit" },
   "timeentry.break-remove": { label: "Pause entfernt (laut Angabe)", category: "zeit" },
   "timeentry.remove": { label: "Eintrag aus der Wertung genommen", category: "zeit" },
+  "punch.review": { label: "Stempelung von unterwegs geprüft", category: "zeit" },
 
   // Korrekturen
   "correction.submit": { label: "Korrektur beantragt", category: "korrektur" },

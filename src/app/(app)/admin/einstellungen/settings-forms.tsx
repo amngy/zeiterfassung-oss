@@ -370,6 +370,14 @@ export function PunchPolicyForm({ s }: { s: AppSettings }) {
         defaultChecked={s.punchPolicy.recordDeviceType}
         info={`Speichert zu jeder Stempelung den grob erkannten Gerätetyp, z. B. „iPhone · Safari“ oder „Windows · Edge“ — ohne Version, ohne Gerätekennung, ohne Standort. So wird sichtbar, ob z. B. ein spätes Ausstempeln vom Handy statt vom Büro-PC kam. Der Wert stammt aus der Browserkennung und ist ein Hinweis, kein Beweis. Weil die Angabe geeignet ist, Verhalten zu überwachen, besteht ein Mitbestimmungsrecht des Betriebsrats (§87 Abs. 1 Nr. 6 BetrVG); die Beschäftigten sind vorab zu informieren (Art. 13 DSGVO). Ausgeschaltet wird nur der Erfassungsweg (z. B. „Browser“) gespeichert. Gilt ab dem Speichern für neue Stempelungen.`}
       />
+      <Field
+        label="Prüfhinweis bei Mehrarbeit über den Webzugang (Minuten)"
+        htmlFor="pp-review"
+        hint="0 = aus"
+        info={`Endet ein Arbeitstag mit einem Ausstempeln über den Webzugang (also von überall möglich, nicht am Terminal) und liegt der Tag mehr als diese Minuten über dem Soll, erscheint er unter Verwaltung → Korrekturen zur Prüfung. Es wird nichts gesperrt oder geändert; die Verwaltung markiert den Tag als „geprüft“ (protokolliert), die Person sieht in ihren Zeiten „in Prüfung“ bzw. „geprüft“. Ausgewertet werden nur ohnehin gespeicherte Zeiten. Als Verhaltenskontrolle mitbestimmungspflichtig (§87 Abs. 1 Nr. 6 BetrVG); die Beschäftigten sind zu informieren (Art. 13 DSGVO).`}
+      >
+        <Input id="pp-review" name="reviewRemoteOvertimeMinutes" type="number" min={0} max={600} step={1} defaultValue={s.punchPolicy.reviewRemoteOvertimeMinutes} className="max-w-xs" />
+      </Field>
       <Banner state={state} />
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>
