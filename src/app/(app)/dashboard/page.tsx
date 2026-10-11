@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ClockCard } from "../zeiten/clock-card";
 import { clockIn, clockOut, endBreak, startBreak } from "../zeiten/actions";
+import { ABSENCE_LABEL } from "@/lib/time/absence-kinds";
 
 export const metadata: Metadata = { title: "Übersicht" };
 
@@ -59,7 +60,7 @@ export default async function DashboardPage() {
         expectedMs={today.day.expectedMs}
         absenceMs={today.day.absenceMs}
         absenceLabel={
-          today.day.absence ? (today.day.absence.kind === "SICK" ? "Krank" : "Urlaub") : null
+          today.day.absence ? ABSENCE_LABEL[today.day.absence.kind] : null
         }
         renderAtISO={asOf.toISOString()}
         dayEndsAtISO={berlinDayRange(berlinDayKey(asOf)).end.toISOString()}

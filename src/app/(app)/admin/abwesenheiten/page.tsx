@@ -7,7 +7,7 @@ import { getAppSettings } from "@/lib/settings";
 import {
   getAbsencesForYear,
   getAbsencesInRange,
-  getPendingVacationRequests,
+  getPendingAbsenceRequests,
   getSickCreditCandidates,
   getStaffVacationOverview,
 } from "@/lib/absences";
@@ -43,6 +43,7 @@ import {
   decideAbsenceAction,
   sendReminderAction,
 } from "./actions";
+import { ABSENCE_LABEL, isSicknessKind } from "@/lib/time/absence-kinds";
 
 export const metadata: Metadata = { title: "Abwesenheiten" };
 
@@ -64,7 +65,7 @@ export default async function AdminAbsencesPage({
   const { from, to } = monthRangeOf(monthAnchor);
 
   const [pending, overview, candidates, settings, teamAbsences, employeeRows] = await Promise.all([
-    getPendingVacationRequests(),
+    getPendingAbsenceRequests(),
     getStaffVacationOverview(year),
     getSickCreditCandidates(year),
     getAppSettings(),
@@ -137,9 +138,12 @@ export default async function AdminAbsencesPage({
   for (const a of teamAbsences) {
     const aFrom = fmtKey(a.startDate);
     const aTo = fmtKey(a.endDate);
-    const tone: CalendarMark["tone"] =
-      a.type === "SICK" ? "sick" : a.status === "APPROVED" ? "vacation" : "vacation-pending";
-    const verb = a.type === "SICK" ? "krank" : a.status === "APPROVED" ? "Urlaub" : "Urlaub (offen)";
+    const tone: CalendarMark["tone"] = isSicknessKind(a.type)
+      ? "sick"
+      : a.status === "APPROVED"
+        ? "vacation"
+        : "vacation-pending";
+    const verb = `${ABSENCE_LABEL[a.type]}${a.status === "PENDING" ? " (offen)" : ""}`;
     for (const key of eachDayKey(aFrom < from ? from : aFrom, aTo > to ? to : aTo)) {
       addMark(key, { tone, label: `${a.user.name}: ${verb}` });
     }
@@ -157,12 +161,12 @@ export default async function AdminAbsencesPage({
         </p>
       </header>
 
-      {/* ── Pending vacation requests ─────────────────────────────────────── */}
+      {/* ── Pending requests (leave and the other requestable kinds) ──────── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-1.5 text-base">
-            Offene Urlaubsanträge {pending.length > 0 && <Badge tone="warning">{pending.length}</Badge>}
-            <InfoHint>{`Genehmigt den Antrag und bucht den Urlaub. Die verbrauchten Arbeitstage werden dabei neu berechnet – seit dem Antrag geänderte Arbeitszeiten oder Feiertage fließen in die genehmigte Zahl ein.`}</InfoHint>
+            Offene Anträge {pending.length > 0 && <Badge tone="warning">{pending.length}</Badge>}
+            <InfoHint>{`Genehmigt den Antrag und bucht die Abwesenheit (Urlaub wird vom Anspruch abgezogen). Die Arbeitstage werden dabei neu berechnet – seit dem Antrag geänderte Arbeitszeiten oder Feiertage fließen in die genehmigte Zahl ein.`}</InfoHint>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -176,7 +180,9 @@ export default async function AdminAbsencesPage({
                   className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm"
                 >
                   <div>
-                    <p className="font-medium text-ink">{r.user.name}</p>
+                    <p className="font-medium text-ink">
+                      {r.user.name} · {ABSENCE_LABEL[r.type]}
+                    </p>
                     <p className="text-muted">
                       {formatDayKey(fmtKey(r.startDate))} – {formatDayKey(fmtKey(r.endDate))} ·{" "}
                       <strong>{formatDays(r.workingDaysCount)}</strong> Tage

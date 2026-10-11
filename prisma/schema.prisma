@@ -65,9 +65,19 @@ enum RequestStatus {
   CANCELLED
 }
 
+// How each type books a day (credit / no credit / no Soll) lives in
+// src/lib/time/absence-kinds.ts.
 enum AbsenceType {
   VACATION
   SICK
+  SPECIAL_LEAVE // Sonderurlaub
+  TRAINING // Fortbildung
+  BUSINESS_TRIP // Dienstreise
+  TIME_OFF_IN_LIEU // Freizeitausgleich
+  UNPAID_LEAVE // unbezahlter Urlaub
+  PARENTAL_LEAVE // Elternzeit
+  MATERNITY_PROTECTION // Mutterschutz
+  CHILD_SICK // Kind krank, § 45 SGB V
 }
 
 enum HolidayType {

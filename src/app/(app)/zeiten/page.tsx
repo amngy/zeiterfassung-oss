@@ -30,6 +30,7 @@ import {
   ViolationList,
 } from "./views";
 import { clockIn, clockOut, endBreak, startBreak } from "./actions";
+import { ABSENCE_LABEL } from "@/lib/time/absence-kinds";
 
 export const metadata: Metadata = { title: "Meine Zeiten" };
 
@@ -150,7 +151,7 @@ export default async function ZeitenPage({
         expectedMs={today.day.expectedMs}
         absenceMs={today.day.absenceMs}
         absenceLabel={
-          today.day.absence ? (today.day.absence.kind === "SICK" ? "Krank" : "Urlaub") : null
+          today.day.absence ? ABSENCE_LABEL[today.day.absence.kind] : null
         }
         renderAtISO={asOf.toISOString()}
         dayEndsAtISO={berlinDayRange(todayKey).end.toISOString()}

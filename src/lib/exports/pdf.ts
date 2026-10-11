@@ -14,6 +14,7 @@ import {
   AUTO_BREAK_WARNING,
   type MonthlyReport,
 } from "./report";
+import { ABSENCE_LABEL } from "@/lib/time/absence-kinds";
 
 const A4 = { w: 595.28, h: 841.89 };
 const MARGIN = 48;
@@ -341,7 +342,7 @@ export async function monthlyReportPdf(report: MonthlyReport): Promise<Uint8Arra
     for (const a of report.absences) {
       c.ensure(13);
       c.text(
-        `${a.type === "VACATION" ? "Urlaub" : "Krank"}: ${formatDayKey(a.from)} – ${formatDayKey(a.to)} (${a.days} Tage)${a.note ? " · " + a.note : ""}`,
+        `${ABSENCE_LABEL[a.type]}: ${formatDayKey(a.from)} – ${formatDayKey(a.to)} (${a.days} Tage)${a.note ? " · " + a.note : ""}`,
         { size: 9, color: INK },
       );
       c.move(12);

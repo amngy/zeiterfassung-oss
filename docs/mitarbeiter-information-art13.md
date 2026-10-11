@@ -30,7 +30,10 @@ Daten wir warum verarbeiten und welche Rechte Sie haben.
   und **kein** Standort gespeichert.
 - **Abwesenheiten:** Urlaub und Krankheitstage. Bei Krankheit wird lediglich
   vermerkt, **ob** eine AU-Bescheinigung vorliegt — **keine** Diagnosen oder
-  Gesundheitsdetails.
+  Gesundheitsdetails. Außerdem, soweit beantragt oder eingetragen:
+  Sonderurlaub, Fortbildung, Dienstreise, Freizeitausgleich, unbezahlter Urlaub,
+  Elternzeit, Mutterschutz und „Kind krank“ — jeweils nur Art und Zeitraum, ohne
+  Angaben zum Kind oder zu Befunden.
 
 Es erfolgt **keine** biometrische Erfassung, **keine** Standortverfolgung und
 **keine** Leistungsbewertung. Der Gerätetyp wird nicht zu Profilen ausgewertet.
