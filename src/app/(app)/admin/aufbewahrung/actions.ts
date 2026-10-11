@@ -25,5 +25,7 @@ export async function purgeExpiredAction(formData: FormData): Promise<void> {
   }
   // Every list and report may have shown deleted rows.
   revalidatePath("/", "layout");
-  redirect(`${PAGE}?geloescht=${totalRecords(result.counts)}&anonymisiert=${result.anonymized}`);
+  redirect(
+    `${PAGE}?geloescht=${totalRecords(result.counts)}&geraete=${result.counts.deviceLabels}&anonymisiert=${result.anonymized}`,
+  );
 }

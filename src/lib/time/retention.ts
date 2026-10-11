@@ -25,3 +25,27 @@ export function effectiveRetentionYears(configured: number): number {
 export function retentionCutoffYear(todayKey: string, configuredYears: number): number {
   return Number(todayKey.slice(0, 4)) - effectiveRetentionYears(configuredYears);
 }
+
+/** Bounds for how long a punch keeps its device type (#34). */
+export const DEVICE_LABEL_MONTHS_MIN = 1;
+export const DEVICE_LABEL_MONTHS_MAX = 24;
+
+/**
+ * Punches before this instant lose their device type. No law requires keeping
+ * it: it only serves to check a single punch while the period is still being
+ * looked at, so it goes long before the time record itself (Art. 5(1)(c), (e)
+ * DSGVO). Whole calendar months back from `asOf`, clamped to the bounds; on a
+ * day the earlier month lacks (31 March − 1 month) it falls on that month's
+ * last day.
+ */
+export function deviceLabelCutoff(asOf: Date, configuredMonths: number): Date {
+  const whole = Number.isFinite(configuredMonths) ? Math.floor(configuredMonths) : DEVICE_LABEL_MONTHS_MIN;
+  const months = Math.min(DEVICE_LABEL_MONTHS_MAX, Math.max(DEVICE_LABEL_MONTHS_MIN, whole));
+  const d = new Date(asOf);
+  const day = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() - months);
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(day, lastDay));
+  return d;
+}

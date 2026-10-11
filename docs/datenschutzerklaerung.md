@@ -79,9 +79,9 @@ ausgeschiedener Beschäftigter werden **anonymisiert**. Die Löschung stößt di
 Verwaltung an (Verwaltung → Aufbewahrung), sie läuft nicht automatisch.
 
 Für den Gerätetyp einer Stempelung besteht keine Aufbewahrungspflicht. Er wird
-derzeit mit dem Zeiteintrag gespeichert und mit ihm bzw. bei der
-Anonymisierung entfernt.
-[Kürzere Frist festlegen, z. B. … Monate.]
+nach einer eigenen, kürzeren Frist entfernt (Voreinstellung: 3 Monate,
+einstellbar 1–24), ebenfalls über Verwaltung → Aufbewahrung; Zeitpunkt und
+Erfassungsweg der Stempelung bleiben.
 
 ## 6. Rechte der betroffenen Personen
 

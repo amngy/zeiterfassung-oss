@@ -352,6 +352,14 @@ export function PunchPolicyForm({ s }: { s: AppSettings }) {
       >
         <Input id="pp-review" name="reviewRemoteOvertimeMinutes" type="number" min={0} max={600} step={1} defaultValue={s.punchPolicy.reviewRemoteOvertimeMinutes} className="max-w-xs" />
       </Field>
+      <Field
+        label="Gerätetyp löschen nach (Monaten)"
+        htmlFor="pp-device-months"
+        hint="1–24, Voreinstellung 3"
+        info={`Für den Gerätetyp einer Stempelung gibt es keine Aufbewahrungspflicht; er dient nur der Prüfung einzelner Stempelungen. Ältere Angaben werden unter Verwaltung → Aufbewahrung gelöscht (nach Bestätigung, nicht automatisch). Zeitpunkt und Erfassungsweg der Stempelung bleiben.`}
+      >
+        <Input id="pp-device-months" name="deviceLabelMonths" type="number" min={1} max={24} step={1} defaultValue={s.punchPolicy.deviceLabelMonths} className="max-w-xs" />
+      </Field>
       <Banner state={state} />
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>
