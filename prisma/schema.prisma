@@ -223,13 +223,38 @@ model ClockEvent {
   // proof: a User-Agent can be spoofed. Never the raw header, never location.
   deviceLabel String?
   timeEntryId String
+  // The on-site terminal whose code was scanned (channel QR); null otherwise.
+  terminalId  String?
   createdAt   DateTime       @default(now())
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  timeEntry TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeEntry TimeEntry      @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  terminal  ClockTerminal? @relation(fields: [terminalId], references: [id])
 
   @@index([userId, at])
   @@index([timeEntryId])
+  @@index([terminalId])
+}
+
+// A shared device on site (e.g. a tablet at the entrance) that shows a QR code
+// rotating every 30 s; employees scan it with their phone to punch (channel QR).
+// An admin pairs the device once with a short-lived one-time code; from then on
+// it authenticates with a random token in a cookie. Both are stored only as
+// SHA-256 hashes. Terminals are deactivated, never deleted, so past punches keep
+// their reference.
+model ClockTerminal {
+  id            String    @id @default(cuid())
+  label         String
+  active        Boolean   @default(true)
+  tokenHash     String?   @unique
+  pairCodeHash  String?   @unique
+  pairExpiresAt DateTime?
+  pairedAt      DateTime?
+  lastSeenAt    DateTime?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+
+  clockEvents ClockEvent[]
 }
 
 // Employee or admin request to create/change a record. Approval-gated.

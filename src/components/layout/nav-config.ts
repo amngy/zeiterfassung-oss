@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   ScrollText,
   UserCircle,
+  QrCode,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +39,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/nachtragen", label: "Zeiten nachtragen", icon: CalendarPlus },
   { href: "/admin/korrekturen", label: "Korrekturen", icon: ClipboardCheck },
   { href: "/admin/abwesenheiten", label: "Abwesenheiten", icon: CalendarCheck },
+  { href: "/admin/terminals", label: "Terminals", icon: QrCode },
   { href: "/admin/feiertage", label: "Feiertage", icon: ShieldCheck },
   { href: "/admin/protokoll", label: "Protokoll", icon: ScrollText },
   { href: "/admin/auswertung", label: "Auswertungen", icon: FileText },
