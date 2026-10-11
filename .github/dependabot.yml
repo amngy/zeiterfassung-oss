@@ -8,6 +8,21 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
     open-pull-requests-limit: 5
+    ignore:
+      # Deliberate major-version pins. Each upgrade is a migration that needs
+      # its own pull request, not an automated bump:
+      #   prisma 7    — new config file and client generator
+      #   tailwind 4  — CSS-first config replaces tailwind.config.ts
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      # Types track the Node runtime (.nvmrc), not the newest Node release.
+      # Bump this together with .nvmrc.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
