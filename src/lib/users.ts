@@ -94,6 +94,7 @@ export interface UserDetail {
   vacationDaysPerYear: number;
   vacationCarryOverDays: number;
   anonymizedAt: Date | null;
+  twoFactorEnabled: boolean;
   schedules: {
     id: string;
     effectiveFrom: string;
@@ -122,6 +123,7 @@ export async function getUserDetail(userId: string): Promise<UserDetail | null> 
     vacationDaysPerYear: u.vacationDaysPerYear,
     vacationCarryOverDays: u.vacationCarryOverDays,
     anonymizedAt: u.anonymizedAt,
+    twoFactorEnabled: !!u.totpEnabledAt,
     schedules: u.schedules.map((s) => {
       const hours = scheduleToHours(s);
       return {

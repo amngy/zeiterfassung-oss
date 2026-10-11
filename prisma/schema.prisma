@@ -146,6 +146,17 @@ model User {
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
 
+  // Second factor (TOTP, RFC 6238): required for admins (#14), optional for
+  // everyone else. `totpSecret` is the active one. Enrolment writes
+  // `totpPendingSecret` and swaps it in only once a code from the new device
+  // has proved it works, so starting over can never lock anyone out.
+  totpSecret        String?
+  totpPendingSecret String?
+  totpEnabledAt     DateTime?
+  totpLastStep      Int? // last accepted time step: each code works once
+  totpFailures      Int       @default(0)
+  totpBlockedUntil  DateTime?
+
   // Anonymisation marker (DSGVO Art. 17 after retention period).
   anonymizedAt DateTime?
 
@@ -159,6 +170,7 @@ model User {
   absences       Absence[]
   corrections    CorrectionRequest[]
   vacationYears  VacationYear[]
+  recoveryCodes  RecoveryCode[]
 
   @@index([active])
 }
@@ -403,6 +415,22 @@ model LoginThrottle {
   @@id([ip, userId])
   @@index([userId, firstFailureAt])
   @@index([lastFailureAt])
+}
+
+// One-time recovery codes for the second factor, for when the phone is gone.
+// Only a SHA-256 of each code is stored (60 random bits — a slow hash would add
+// nothing). A used code keeps its row with `usedAt`, so the page can say how
+// many are left.
+model RecoveryCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Per-year snapshot of an employee's leave account.

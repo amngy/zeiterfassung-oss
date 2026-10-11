@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { authenticate, type LoginState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -14,9 +14,26 @@ export function LoginForm({ next }: { next: string | null }) {
     FormData
   >(authenticate, undefined);
   const [showPassword, setShowPassword] = useState(false);
+  // What was typed in step 1, kept for the code step (#14) — React resets the
+  // form after each action. Without JavaScript the step simply asks again.
+  const [typed, setTyped] = useState<{ email: string; password: string; remember: boolean } | null>(null);
+  const codeStep = state?.step === "code";
+  const carried = codeStep && typed ? typed : null;
 
   return (
-    <form action={formAction} className="mt-8 space-y-5" aria-label="Anmeldung">
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        const fd = new FormData(e.currentTarget);
+        setTyped({
+          email: String(fd.get("email") ?? ""),
+          password: String(fd.get("password") ?? ""),
+          remember: fd.get("remember") != null,
+        });
+      }}
+      className="mt-8 space-y-5"
+      aria-label="Anmeldung"
+    >
       {next && <input type="hidden" name="next" value={next} />}
       {state?.error && (
         <div
@@ -27,6 +44,20 @@ export function LoginForm({ next }: { next: string | null }) {
         </div>
       )}
 
+      {carried ? (
+        <>
+          <input type="hidden" name="email" value={carried.email} />
+          <input type="hidden" name="password" value={carried.password} />
+          {carried.remember && <input type="hidden" name="remember" value="on" />}
+          <p className="text-sm text-muted">
+            Angemeldet als <strong className="text-ink">{carried.email}</strong> ·{" "}
+            <a href="/login" className="text-teal underline underline-offset-2">
+              anderes Konto
+            </a>
+          </p>
+        </>
+      ) : (
+        <>
       <Field label="E-Mail-Adresse" htmlFor="email" required>
         <Input
           id="email"
@@ -35,6 +66,7 @@ export function LoginForm({ next }: { next: string | null }) {
           autoComplete="username"
           placeholder="name@firma.de"
           inputMode="email"
+          defaultValue={state?.email}
           required
         />
       </Field>
@@ -74,9 +106,31 @@ export function LoginForm({ next }: { next: string | null }) {
         </label>
         <InfoHint>{`Aktiviert: Sie bleiben rund 30 Tage angemeldet. Deaktiviert: Die Anmeldung endet, sobald Sie den Browser schließen. Auf gemeinsam genutzten Geräten besser deaktiviert lassen.`}</InfoHint>
       </div>
+        </>
+      )}
+
+      {codeStep && (
+        <Field
+          label="Code aus der Authenticator-App"
+          htmlFor="code"
+          required
+          info={`Der sechsstellige Code aus der App, die Sie bei der Einrichtung der Zwei-Faktor-Anmeldung verbunden haben. Ohne Handy: einen Ihrer Wiederherstellungscodes eingeben (jeder gilt einmal). Sind beide verloren, kann die Verwaltung die Zwei-Faktor-Anmeldung zurücksetzen.`}
+        >
+          <Input
+            id="code"
+            name="code"
+            autoComplete="one-time-code"
+            placeholder="123456"
+            autoFocus
+            required
+            className="font-mono tracking-widest"
+          />
+        </Field>
+      )}
 
       <Button type="submit" size="lg" className="w-full" disabled={pending}>
-        {pending ? "Anmeldung läuft…" : "Anmelden"}
+        {codeStep && <ShieldCheck className="h-4 w-4" />}
+        {pending ? "Anmeldung läuft…" : codeStep ? "Code bestätigen" : "Anmelden"}
       </Button>
     </form>
   );

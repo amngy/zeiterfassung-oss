@@ -16,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { InfoHint } from "@/components/ui/info-hint";
 import { ProfileForm, ScheduleForm, ResetPasswordForm } from "../forms";
-import { toggleActiveAction, anonymizeUserAction } from "../actions";
+import { toggleActiveAction, anonymizeUserAction, resetTwoFactorAction } from "../actions";
 
 export const metadata: Metadata = { title: "Konto verwalten" };
 
@@ -256,6 +256,28 @@ export default async function AdminEmployeeDetailPage({
               Aufbewahrungsfristen.
             </p>
           </div>
+
+          {!user.anonymizedAt && (
+            <div className="flex flex-wrap items-center gap-3 border-t border-black/[0.06] pt-4">
+              <span className="text-sm text-ink">
+                Zwei-Faktor-Anmeldung:{" "}
+                {user.twoFactorEnabled ? (
+                  <Badge tone="lime">eingeschaltet</Badge>
+                ) : (
+                  <Badge tone="neutral">{user.role === "ADMIN" ? "noch nicht eingerichtet" : "aus"}</Badge>
+                )}
+              </span>
+              {user.twoFactorEnabled && (
+                <form action={resetTwoFactorAction}>
+                  <input type="hidden" name="userId" value={user.id} />
+                  <button className="rounded-xl border border-danger/30 px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10">
+                    Zwei-Faktor zurücksetzen
+                  </button>
+                </form>
+              )}
+              <InfoHint>{`Für verlorene Handys ohne Wiederherstellungscodes: entfernt App-Verknüpfung und Codes. Danach genügt das Passwort, bis die Person neu einrichtet — bei Konten mit Verwaltungsrechten wird das sofort nach der Anmeldung verlangt. Das eigene Konto wird unter „Mein Konto“ verwaltet. Wird protokolliert.`}</InfoHint>
+            </div>
+          )}
 
           {!user.anonymizedAt && (
             <div className="rounded-xl border border-danger/20 bg-danger/[0.04] p-4">
