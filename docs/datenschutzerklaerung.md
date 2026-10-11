@@ -23,7 +23,8 @@ verarbeitet werden insbesondere:
   Status der Schwerbehinderung (für den gesetzlichen Zusatzurlaub).
 - Arbeitszeitdaten: Beginn, Ende und Dauer von Arbeits- und Pausenzeiten,
   Korrekturen und deren Begründungen; je Stempelung der Erfassungsweg
-  (z. B. Browser). [Nur falls aktiviert:] zusätzlich der grob erkannte
+  (z. B. Browser oder QR-Code am Terminal, dann mit der Bezeichnung des
+  Terminals, z. B. „Eingang“). [Nur falls aktiviert:] zusätzlich der grob erkannte
   Gerätetyp (z. B. „iPhone · Safari“) — ohne eindeutige Gerätekennung und ohne
   Standort.
 - Abwesenheiten: Urlaub und Krankheitszeiten (inkl. Vorliegen einer AU-

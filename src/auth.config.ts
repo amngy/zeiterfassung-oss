@@ -25,6 +25,10 @@ export const authConfig = {
       // The design preview is a public, data-free demo page.
       if (path.startsWith("/design")) return true;
 
+      // On-site terminals have no user session; they authenticate with their
+      // own device cookie, checked by every /terminal route itself.
+      if (path === "/terminal" || path.startsWith("/terminal/")) return true;
+
       if (path.startsWith("/login")) {
         if (isLoggedIn) {
           return Response.redirect(new URL("/dashboard", nextUrl));
