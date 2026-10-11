@@ -14,6 +14,7 @@ import {
   formatDayKey,
   formatDays,
 } from "@/lib/time";
+import { ABSENCE_LABEL, isAbsenceKind } from "@/lib/time/absence-kinds";
 
 /** Minimal shape the view-model builder needs from an audit row. */
 export interface AuditRowInput {
@@ -134,6 +135,7 @@ const ACTIONS: Record<string, ActionMeta> = {
 
   // Abwesenheiten
   "absence.vacation.request": { label: "Urlaub beantragt", category: "abwesenheit" },
+  "absence.request": { label: "Abwesenheit beantragt", category: "abwesenheit" },
   "absence.sick.record": { label: "Krankmeldung erfasst", category: "abwesenheit" },
   "absence.approve": { label: "Abwesenheit genehmigt", category: "abwesenheit" },
   "absence.reject": { label: "Abwesenheit abgelehnt", category: "abwesenheit" },
@@ -141,6 +143,7 @@ const ACTIONS: Record<string, ActionMeta> = {
   "absence.creditback": { label: "Urlaub gutgeschrieben (§ 9 BUrlG)", category: "abwesenheit" },
   "absence.admin.vacation": { label: "Urlaub eingetragen (Verwaltung)", category: "abwesenheit" },
   "absence.admin.sick": { label: "Krankheit eingetragen (Verwaltung)", category: "abwesenheit" },
+  "absence.admin.create": { label: "Abwesenheit eingetragen (Verwaltung)", category: "abwesenheit" },
   "absence.admin.correct": { label: "Abwesenheit korrigiert (Verwaltung)", category: "abwesenheit" },
   "absence.admin.cancel": { label: "Abwesenheit storniert (Verwaltung)", category: "abwesenheit" },
   "absence.recount": { label: "Urlaubstage neu berechnet", category: "abwesenheit" },
@@ -342,7 +345,7 @@ function absenceLabel(v: unknown): string | undefined {
   const o = asObj(v);
   if (!o) return undefined;
   const type = asStr(o.type);
-  const kind = type === "SICK" ? "Krankheit" : type === "VACATION" ? "Urlaub" : null;
+  const kind = isAbsenceKind(type) ? ABSENCE_LABEL[type] : null;
   const rest = rangeWithDays(v);
   return [kind, rest].filter(Boolean).join(" · ") || undefined;
 }
@@ -497,8 +500,9 @@ export function summarizeDetail(
     case "timeentry.remove":
       return { from: entryLabel(oldValue) };
 
-    case "absence.vacation.request": {
-      const base = rangeWithDays(newValue);
+    case "absence.vacation.request":
+    case "absence.request": {
+      const base = absenceLabel(newValue);
       const o = asObj(newValue);
       const halfCount =
         (o && asBool(o.halfDayStart) ? 1 : 0) + (o && asBool(o.halfDayEnd) ? 1 : 0);
@@ -515,7 +519,8 @@ export function summarizeDetail(
     }
     case "absence.admin.vacation":
     case "absence.admin.sick":
-      return { text: rangeWithDays(newValue) };
+    case "absence.admin.create":
+      return { text: absenceLabel(newValue) };
     // A correction is only legible as a before/after pair: which range and which
     // type the record used to be, and what it is now.
     case "absence.admin.correct":

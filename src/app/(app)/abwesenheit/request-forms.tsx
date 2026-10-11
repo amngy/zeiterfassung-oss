@@ -7,7 +7,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { InfoHint } from "@/components/ui/info-hint";
-import { Input, Textarea } from "@/components/ui/input";
+import { Input, Select, Textarea } from "@/components/ui/input";
+import {
+  ABSENCE_EFFECT_TEXT,
+  ABSENCE_LABEL,
+  ABSENCE_TREATMENT,
+  REQUESTABLE_KINDS,
+} from "@/lib/time/absence-kinds";
+import type { AbsenceKind } from "@/lib/time/types";
 import {
   recordSickDay,
   submitVacationRequest,
@@ -64,6 +71,7 @@ function Banner({ state }: { state: AbsenceFormState }) {
 
 export function VacationRequestForm({ todayKey }: { todayKey: string }) {
   const [open, setOpen] = React.useState(false);
+  const [type, setType] = React.useState<AbsenceKind>("VACATION");
   const [state, action, pending] = useActionState<AbsenceFormState, FormData>(
     submitVacationRequest,
     {},
@@ -80,7 +88,7 @@ export function VacationRequestForm({ todayKey }: { todayKey: string }) {
         >
           <span className="flex items-center gap-2 text-base font-medium text-teal">
             <CalendarPlus className="h-4 w-4" />
-            Urlaub beantragen
+            Urlaub &amp; Abwesenheit beantragen
           </span>
           <span className="text-sm text-muted">{open ? "schließen" : "öffnen"}</span>
         </button>
@@ -89,6 +97,25 @@ export function VacationRequestForm({ todayKey }: { todayKey: string }) {
 
         {open && (
           <form action={action} className="mt-4 space-y-4">
+            <Field
+              label="Art"
+              htmlFor="v-type"
+              hint={ABSENCE_EFFECT_TEXT[ABSENCE_TREATMENT[type]]}
+              info={`Urlaub wird vom Urlaubskonto abgezogen. Sonderurlaub, Fortbildung und Dienstreise werden wie Arbeitszeit gutgeschrieben; Freizeitausgleich wird aus dem Überstundensaldo genommen; bei unbezahltem Urlaub, Elternzeit, Mutterschutz und „Kind krank“ entfällt die Sollzeit. Alle Arten werden von der Verwaltung genehmigt. Krankheit bitte rechts unter „Krankmeldung“ erfassen.`}
+            >
+              <Select
+                id="v-type"
+                name="type"
+                value={type}
+                onChange={(e) => setType(e.target.value as AbsenceKind)}
+              >
+                {REQUESTABLE_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {ABSENCE_LABEL[k]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label="Von"
@@ -128,7 +155,7 @@ export function VacationRequestForm({ todayKey }: { todayKey: string }) {
               <Button type="submit" disabled={pending}>
                 Antrag einreichen
               </Button>
-              <InfoHint>{`Reicht einen Urlaubsantrag ein. Er bleibt offen, bis eine Führungskraft ihn genehmigt; erst dann wird der Urlaub vom Guthaben abgezogen.`}</InfoHint>
+              <InfoHint>{`Reicht den Antrag ein. Er bleibt offen, bis die Verwaltung ihn genehmigt; erst dann wird Urlaub vom Guthaben abgezogen bzw. die Abwesenheit in den Zeiten berücksichtigt.`}</InfoHint>
             </div>
           </form>
         )}

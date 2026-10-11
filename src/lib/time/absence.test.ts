@@ -238,3 +238,62 @@ describe("Pausenautomatik — the per-person exemption", () => {
     expect(normal.autoBreakMs).toBe(0);
   });
 });
+
+describe("absence kinds (#21) — how each books a day", () => {
+  const span = (kind: AbsenceSpan["kind"], fromKey: string, toKey = fromKey, half: Partial<AbsenceSpan> = {}): AbsenceSpan => ({
+    kind,
+    fromKey,
+    toKey,
+    ...half,
+  });
+  const day = (kind: AbsenceSpan["kind"], half: Partial<AbsenceSpan> = {}) =>
+    summarizeDay("2026-07-21", [], nicole, { asOf: AFTER, absences: absenceDayMap([span(kind, "2026-07-21", "2026-07-21", half)]) });
+
+  it("credits the Soll for Sonderurlaub, Fortbildung and Dienstreise", () => {
+    for (const kind of ["SPECIAL_LEAVE", "TRAINING", "BUSINESS_TRIP"] as const) {
+      const d = day(kind);
+      expect([d.expectedMs, d.absenceMs, d.balanceMs]).toEqual([6 * H, 6 * H, 0]);
+    }
+  });
+
+  it("draws Freizeitausgleich from the balance: Soll stays, nothing credited", () => {
+    const d = day("TIME_OFF_IN_LIEU");
+    expect([d.expectedMs, d.absenceMs, d.balanceMs]).toEqual([6 * H, 0, -6 * H]);
+    expect(d.absence?.kind).toBe("TIME_OFF_IN_LIEU");
+  });
+
+  it("drops the Soll for unpaid kinds: no credit, no minus hours", () => {
+    for (const kind of ["UNPAID_LEAVE", "PARENTAL_LEAVE", "MATERNITY_PROTECTION", "CHILD_SICK"] as const) {
+      const d = day(kind);
+      expect([d.expectedMs, d.absenceMs, d.balanceMs]).toEqual([0, 0, 0]);
+    }
+  });
+
+  it("drops only half the Soll for a half day of unpaid leave", () => {
+    const d = day("UNPAID_LEAVE", { halfDayStart: true });
+    expect([d.expectedMs, d.absenceMs, d.balanceMs]).toEqual([3 * H, 0, -3 * H]);
+  });
+
+  it("still counts work done on an unpaid day as overtime", () => {
+    const absences = absenceDayMap([span("PARENTAL_LEAVE", "2026-07-21")]);
+    const entries = [work(berlin("2026-07-21", "08:00"), berlin("2026-07-21", "10:00"))];
+    const d = summarizeDay("2026-07-21", entries, nicole, { asOf: AFTER, absences });
+    expect(d.balanceMs).toBe(2 * H);
+  });
+
+  it("lets Elternzeit/Mutterschutz win over sickness, and sickness over the rest", () => {
+    const map = absenceDayMap([
+      span("SICK", "2026-07-20", "2026-07-24"),
+      span("PARENTAL_LEAVE", "2026-07-22", "2026-07-31"),
+      span("TRAINING", "2026-07-17", "2026-07-21"),
+    ]);
+    expect(map.get("2026-07-17")?.kind).toBe("TRAINING");
+    expect(map.get("2026-07-21")?.kind).toBe("SICK");
+    expect(map.get("2026-07-23")?.kind).toBe("PARENTAL_LEAVE");
+  });
+
+  it("lets a parent's own sickness win over Kind krank", () => {
+    const map = absenceDayMap([span("CHILD_SICK", "2026-07-21"), span("SICK", "2026-07-21")]);
+    expect(map.get("2026-07-21")?.kind).toBe("SICK");
+  });
+});
