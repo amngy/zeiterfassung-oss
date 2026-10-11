@@ -108,6 +108,8 @@ const DESTRUCTIVE = new Set<string>([
   "absence.admin.cancel",
   "user.deactivate",
   "user.anonymize",
+  "user.2fa.disable",
+  "user.2fa.reset",
   "holiday.delete",
 ]);
 
@@ -155,6 +157,12 @@ const ACTIONS: Record<string, ActionMeta> = {
   "user.password.reset": { label: "Passwort zurückgesetzt", category: "konto" },
   "user.password.change": { label: "Passwort geändert", category: "konto" },
   "user.anonymize": { label: "Konto anonymisiert (DSGVO)", category: "konto" },
+  "user.2fa.enable": { label: "Zwei-Faktor-Anmeldung eingerichtet", category: "konto" },
+  "user.2fa.device": { label: "Zwei-Faktor: neues Gerät eingerichtet", category: "konto" },
+  "user.2fa.disable": { label: "Zwei-Faktor-Anmeldung abgeschaltet", category: "konto" },
+  "user.2fa.reset": { label: "Zwei-Faktor-Anmeldung zurückgesetzt", category: "konto" },
+  "user.2fa.recovery.use": { label: "Anmeldung mit Wiederherstellungscode", category: "konto" },
+  "user.2fa.recovery.renew": { label: "Wiederherstellungscodes neu erzeugt", category: "konto" },
 
   // Feiertage
   "holiday.seed": { label: "Feiertage importiert", category: "feiertag" },

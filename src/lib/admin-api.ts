@@ -4,6 +4,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { adminNeedsTwoFactor } from "@/lib/session";
 
 export interface AdminApiResult {
   ok: true;
@@ -18,9 +19,10 @@ export async function requireAdminApi(): Promise<AdminApiResult | Response> {
   }
   const fresh = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { active: true, role: true },
+    select: { active: true, role: true, totpEnabledAt: true },
   });
-  if (!fresh || !fresh.active || fresh.role !== "ADMIN") {
+  // An admin without a second factor gets no admin data (#14).
+  if (!fresh || !fresh.active || fresh.role !== "ADMIN" || adminNeedsTwoFactor(fresh)) {
     return new Response("Kein Zugriff.", { status: 403 });
   }
   return { ok: true, adminId: session.user.id };
