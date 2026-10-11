@@ -431,7 +431,7 @@ export async function changeOwnPassword(args: {
  *
  * Uses the single-bigint form of pg_advisory_xact_lock, which Postgres keeps in
  * a different key space (pg_locks.objsubid = 1) from the two-integer form used
- * for the per-user clock lock in zeiten/actions.ts (objsubid = 2), so the two
+ * for the per-user clock lock in @/lib/clock (objsubid = 2), so the two
  * can never collide. A BigInt literal rather than a number so that the value
  * Prisma binds is unambiguously int8, matching the function's signature.
  */

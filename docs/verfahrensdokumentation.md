@@ -199,8 +199,16 @@ zugriffsgeschützte Endpunkte ausschließlich von Administrator:innen erzeugt.
 ## 8. Aufbewahrung, Datenschutz, Sicherung
 
 Aufbewahrung gemäß gesetzlicher Fristen (siehe Datenschutzerklärung /
-Verarbeitungsverzeichnis). Datensparsamkeit (keine Biometrie/Standort/Über-
-wachung), HTTPS, argon2id-Hashing, Login-Sperre, Sicherheits-Header. Sicherung
+Verarbeitungsverzeichnis). Datensparsamkeit (keine Biometrie, kein Standort,
+keine Gerätekennung), HTTPS, argon2id-Hashing, Login-Sperre, Sicherheits-Header.
+
+Jede Stempelung wird zusätzlich als Stempelereignis mit Zeitpunkt und
+Erfassungsweg (z. B. Browser) gespeichert. Ist in den Einstellungen „Gerätetyp
+beim Stempeln erfassen“ aktiviert (Voreinstellung: aus), kommt der grob
+erkannte Gerätetyp hinzu (z. B. „iPhone · Safari“). Er dient der
+Plausibilitätsprüfung und ist nur in der Administrationsansicht „Alle Zeiten“
+sichtbar, nicht in den Exporten zur Lohnabrechnung. Vor der Aktivierung ist
+der Betriebsrat zu beteiligen (§ 87 Abs. 1 Nr. 6 BetrVG). Sicherung
 über die verwaltete Datenbank zzgl. regelmäßiger `pg_dump`-Kopien (siehe README).
 
 ## 9. Änderungen an dieser Dokumentation

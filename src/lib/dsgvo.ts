@@ -11,6 +11,7 @@
 //                                 Schwerbehinderung flag/dates → null/false;
 //                                 active → false; anonymizedAt → now
 //   TimeEntry.note                → null  (their rows)
+//   ClockEvent.deviceLabel        → null  (their punches; channel + time stay)
 //   Absence.note                  → null  (their rows — sick notes are Art. 9
 //                                 health data)
 //   CorrectionRequest.reason      → "[anonymisiert]"  (column is NOT NULL)
@@ -48,6 +49,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { REDACTED, redactAuditForSubject, writeAudit } from "@/lib/audit";
 import { hashPassword } from "@/lib/password";
+import { lockClock } from "@/lib/clock";
 import { UserError } from "@/lib/users";
 
 /** Full personal-data export for one subject (Art. 15). JSON-serializable. */
@@ -58,8 +60,9 @@ export async function exportUserData(userId: string): Promise<unknown> {
   });
   if (!user) throw new UserError("Konto nicht gefunden.");
 
-  const [timeEntries, corrections, absences] = await Promise.all([
+  const [timeEntries, clockEvents, corrections, absences] = await Promise.all([
     prisma.timeEntry.findMany({ where: { userId }, orderBy: { start: "asc" } }),
+    prisma.clockEvent.findMany({ where: { userId }, orderBy: { at: "asc" } }),
     prisma.correctionRequest.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
     prisma.absence.findMany({ where: { userId }, orderBy: { startDate: "asc" } }),
   ]);
@@ -87,6 +90,7 @@ export async function exportUserData(userId: string): Promise<unknown> {
     profile,
     workSchedules: user.schedules,
     timeEntries,
+    clockEvents,
     correctionRequests: corrections,
     absences,
     auditLog,
@@ -138,6 +142,11 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
 
   await prisma.$transaction(
     async (tx: Prisma.TransactionClient) => {
+      // First the person's clock lock: a punch already past its session check
+      // then either commits before the device labels are cleared below, or
+      // waits and finds the account inactive. Never a label written after.
+      await lockClock(tx, userId);
+
       // Ids of everything that belongs to this person. Audit rows about their
       // working time are keyed by the ENTRY id, not by the user id, so without
       // this collection those rows (and the notes copied into them) are
@@ -201,6 +210,10 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
         where: { userId, OR: [{ note: { not: null } }, { correctionReason: { not: null } }] },
         data: { note: null, correctionReason: null },
       });
+      const deviceLabels = await tx.clockEvent.updateMany({
+        where: { userId, deviceLabel: { not: null } },
+        data: { deviceLabel: null },
+      });
       const scheduleNotes = await tx.workSchedule.updateMany({
         where: { userId, note: { not: null } },
         data: { note: null },
@@ -221,6 +234,7 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
           timeEntryNotesCleared: entryNotes.count,
           absenceNotesCleared: absenceNotes.count,
           workScheduleNotesCleared: scheduleNotes.count,
+          clockDeviceLabelsCleared: deviceLabels.count,
           correctionTextsRedacted: correctionTexts.count,
         },
         reason: "DSGVO Art. 17 — Anonymisierung",

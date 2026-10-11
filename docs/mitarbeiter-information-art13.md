@@ -22,12 +22,18 @@ Daten wir warum verarbeiten und welche Rechte Sie haben.
 - **Sondermerkmale**, soweit für gesetzliche Ansprüche erforderlich: Geburtsdatum
   (Jugendarbeitsschutz), Schwerbehinderung (Zusatzurlaub), Minijob-Status.
 - **Arbeitszeiten:** Beginn, Ende, Pausen, Korrekturen samt Begründung.
+- **Erfassungsweg je Stempelung:** wie ein Beginn oder Ende erfasst wurde
+  (z. B. „Browser“). [Nur falls aktiviert:] zusätzlich der grob erkannte
+  Gerätetyp (z. B. „iPhone · Safari“), damit sich prüfen lässt, ob eine
+  Stempelung plausibel ist — etwa ob ein Arbeitsende am Arbeitsplatz oder auf
+  einem Mobilgerät erfasst wurde. Es wird **keine** eindeutige Gerätekennung
+  und **kein** Standort gespeichert.
 - **Abwesenheiten:** Urlaub und Krankheitstage. Bei Krankheit wird lediglich
   vermerkt, **ob** eine AU-Bescheinigung vorliegt — **keine** Diagnosen oder
   Gesundheitsdetails.
 
-Es erfolgt **keine** biometrische Erfassung, **keine** Standort- oder
-Verhaltensüberwachung.
+Es erfolgt **keine** biometrische Erfassung, **keine** Standortverfolgung und
+**keine** Leistungsbewertung. Der Gerätetyp wird nicht zu Profilen ausgewertet.
 
 ## Wozu und auf welcher Rechtsgrundlage?
 
@@ -48,7 +54,8 @@ Lohnabrechnung erforderlich ist.
 
 So lange, wie gesetzliche Aufbewahrungsfristen es verlangen (Arbeitszeitnachweise
 ≥ 2 Jahre; sozialversicherungs-/lohnsteuerrechtlich teils länger). Danach werden
-die Daten anonymisiert oder gelöscht.
+die Daten anonymisiert oder gelöscht. Der Gerätetyp einer Stempelung wird
+[spätestens] bei der Anonymisierung entfernt.
 
 ## Ihre Rechte
 
