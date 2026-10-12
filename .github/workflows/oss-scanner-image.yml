@@ -1,0 +1,38 @@
+name: OSS Scanner image
+
+# Builds .oss-scanner/Dockerfile the way Anthropic's OSS Scanner does and
+# checks that the app then runs without network access. A broken build there
+# only shows up as an e-mail, so catch it here first.
+
+on:
+  pull_request:
+    paths:
+      - ".oss-scanner/**"
+      - "package.json"
+      - "package-lock.json"
+      - "prisma/**"
+      - ".github/workflows/oss-scanner-image.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the scanner image
+        run: docker build -f .oss-scanner/Dockerfile -t oss-scanner-image .
+      - name: Run it offline
+        run: |
+          docker run --rm --network none oss-scanner-image sh -c '
+            /src/.oss-scanner/start.sh > /tmp/app.log 2>&1 &
+            for i in $(seq 1 60); do
+              if curl -fsS http://localhost:3000/api/health; then
+                curl -fsS -o /dev/null http://localhost:3000/login && echo " login page ok" && exit 0
+              fi
+              sleep 2
+            done
+            cat /tmp/app.log
+            exit 1'
