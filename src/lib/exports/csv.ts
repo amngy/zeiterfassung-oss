@@ -8,6 +8,7 @@ import {
   dayNote,
   displayHours,
   displayTotals,
+  overtimeLines,
   OPEN_ENTRY_WARNING,
   AUTO_BREAK_WARNING,
   type MonthlyReport,
@@ -152,6 +153,18 @@ export function monthlyReportCsv(report: MonthlyReport): string {
     for (const v of report.violations) {
       lines.push(row([formatDayKey(v.date), v.severity === "BLOCK" ? "Verstoß" : "Hinweis", v.message]));
     }
+  }
+
+  const overtime = overtimeLines(report);
+  if (overtime) {
+    lines.push("");
+    lines.push(row(["Arbeitszeitkonto", "", "Stunden"]));
+    lines.push(row(["Übertrag", "", deci(overtime.carryInHours)]));
+    lines.push(row([overtime.monthLabel, "", deci(overtime.monthHours)]));
+    for (const b of overtime.bookings) {
+      lines.push(row([`${b.label} ${formatDayKey(b.dayKey)}`, "", deci(b.hours), b.note]));
+    }
+    lines.push(row([overtime.endLabel, "", deci(overtime.endHours)]));
   }
 
   if (report.recordingIssues.length > 0) {

@@ -23,6 +23,11 @@ payroll-ready exports — all in German for end users.
   punch records how it arrived (browser / QR or PIN + terminal).
 - **Timesheets** by day / week / month with worked time, breaks and overtime
   (Gleitzeitsaldo).
+- **Overtime account** (Arbeitszeitkonto) per person: the running balance since
+  a start month plus audited bookings — opening balance, payout, forfeiture,
+  corrections, reversals by counter-booking. Optional upper/lower limits flag
+  accounts (nothing is booked automatically); the monthly exports show carry-in,
+  bookings and the closing balance.
 - **Tamper-evident corrections:** times are never overwritten — a correction
   creates a new version linked to the original, gated by an approval workflow,
   and every change is written to an append-only **audit trail**.

@@ -11,9 +11,12 @@ import {
 import { requireAdmin } from "@/lib/session";
 import { getStatistics } from "@/lib/stats";
 import { getStaffVacationOverview } from "@/lib/absences";
+import { listOvertimeAccounts } from "@/lib/overtime";
+import { getAppSettings } from "@/lib/settings";
 import {
   addDaysToKey,
   berlinDayKey,
+  formatDayKey,
   formatDays,
   formatHm,
   formatSigned,
@@ -56,10 +59,13 @@ export default async function AdminStatsPage({
   const anchor = `${monthKey}-01`;
   const { from, to } = monthRangeOf(anchor);
 
-  const [stats, vacation] = await Promise.all([
+  const [stats, vacation, overtime, settings] = await Promise.all([
     getStatistics(from, to, new Date()),
     getStaffVacationOverview(year),
+    listOvertimeAccounts(new Date()),
+    getAppSettings(),
   ]);
+  const limits = settings.overtimeLimits;
 
   const prevMonth = addDaysToKey(from, -1).slice(0, 7);
   const nextMonth = addDaysToKey(to, 1).slice(0, 7);
@@ -246,6 +252,53 @@ export default async function AdminStatsPage({
           </div>
           {stats.employees.length === 0 && (
             <p className="py-8 text-center text-sm text-muted">Keine erfassten Mitarbeitenden.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Arbeitszeitkonten (#22) ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-1.5 text-base">
+            Arbeitszeitkonten
+            <InfoHint>{`Stand heute je Person mit Arbeitszeitkonto: täglicher Saldo seit Beginn des Kontos plus Buchungen. Eingerichtet und gebucht wird bei der Person (Mitarbeitende → Person). Grenzen unter Einstellungen; markiert wird nur, gebucht wird nichts automatisch.`}</InfoHint>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-0">
+          {overtime.length === 0 ? (
+            <p className="px-5 text-sm text-muted">Noch für niemanden eingerichtet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-y border-black/[0.06] text-left text-xs uppercase tracking-wide text-muted">
+                    <th className="px-5 py-2 font-medium">Mitarbeiter:in</th>
+                    <th className="px-5 py-2 font-medium">Seit</th>
+                    <th className="px-5 py-2 text-right font-medium">Stand heute</th>
+                    <th className="px-5 py-2 font-medium" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {overtime.map((o) => (
+                    <tr key={o.userId} className="border-b border-black/[0.04] last:border-0">
+                      <td className="px-5 py-2.5 font-medium text-ink">
+                        <Link href={`/admin/mitarbeitende/${o.userId}`} className="hover:text-teal">
+                          {o.name}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-2.5 text-muted">{formatDayKey(o.fromKey)}</td>
+                      <td className={`px-5 py-2.5 text-right font-mono tabular-nums ${o.balanceMs < 0 ? "text-danger" : ""}`}>
+                        {formatSigned(o.balanceMs)}
+                      </td>
+                      <td className="px-5 py-2.5">
+                        {o.overCapMs > 0 && <Badge tone="warning">{formatHm(o.overCapMs)} über {limits.capHours} h</Badge>}
+                        {o.underFloorMs > 0 && <Badge tone="danger">{formatHm(o.underFloorMs)} unter −{limits.floorHours} h</Badge>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>

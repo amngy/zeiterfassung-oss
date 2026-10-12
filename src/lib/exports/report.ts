@@ -10,6 +10,7 @@ import {
   berlinDayKey,
   berlinDayRange,
   formatClock,
+  formatDayKey,
   formatMonth,
   monthRangeOf,
   type DaySummary,
@@ -17,6 +18,8 @@ import {
 } from "@/lib/time";
 import type { RawEntryRow } from "./csv";
 import { findMinijobRecordingIssues, type RecordingIssue } from "@/lib/minijob-deadline";
+import { overtimeForMonth, type OvertimeMonth } from "@/lib/overtime";
+import { OVERTIME_KIND_LABEL } from "@/lib/time/overtime";
 import { ABSENCE_LABEL } from "@/lib/time/absence-kinds";
 import type { AbsenceKind } from "@/lib/time/types";
 
@@ -71,6 +74,8 @@ export interface MonthlyReport {
   violations: Violation[];
   /** Minijob only: entries whose MiLoG §17 recording is open or was late. */
   recordingIssues: RecordingIssue[];
+  /** Arbeitszeitkonto (#22) for the month; null when none was kept. */
+  overtime: OvertimeMonth | null;
   absences: { type: AbsenceKind; from: string; to: string; days: number; note: string | null }[];
   generatedAtKey: string;
   companyName: string;
@@ -203,6 +208,43 @@ export function displayTotals(report: MonthlyReport): DisplayTotals {
   };
 }
 
+export interface OvertimeLines {
+  carryInHours: number;
+  /** The month's printed Saldo (to date while the month is running). */
+  monthHours: number;
+  monthLabel: string;
+  bookings: { dayKey: string; label: string; hours: number; note: string }[];
+  endHours: number;
+  endLabel: string;
+}
+
+/**
+ * The Arbeitszeitkonto block in printed decimal hours. Built from the printed
+ * values, so Übertrag + Saldo + Buchungen = Stand when added up by hand.
+ */
+export function overtimeLines(report: MonthlyReport): OvertimeLines | null {
+  if (!report.overtime) return null;
+  const totals = displayTotals(report);
+  const running = totals.balanceToDateHours !== null;
+  const carryInHours = displayHours(report.overtime.carryInMs);
+  const monthHours = totals.balanceToDateHours ?? totals.balanceHours;
+  const bookings = report.overtime.bookings.map((b) => ({
+    dayKey: b.dayKey,
+    label: b.reversesId ? `Storno: ${OVERTIME_KIND_LABEL[b.kind]}` : OVERTIME_KIND_LABEL[b.kind],
+    hours: displayHours(b.minutes * 60_000),
+    note: b.note ?? "",
+  }));
+  const endHours = round2(carryInHours + monthHours + bookings.reduce((sum, b) => sum + b.hours, 0));
+  return {
+    carryInHours,
+    monthHours,
+    monthLabel: running ? `Saldo ${report.monthLabel} bis ${formatDayKey(report.generatedAtKey)}` : `Saldo ${report.monthLabel}`,
+    bookings,
+    endHours,
+    endLabel: running ? `Stand ${formatDayKey(report.generatedAtKey)}` : `Stand ${formatDayKey(report.range.to)}`,
+  };
+}
+
 function fmtKey(d: Date): string {
   return berlinDayKey(d, "UTC");
 }
@@ -231,10 +273,11 @@ export async function buildMonthlyReport(
   });
   if (!user) return null;
 
-  const [settings, timesheet, recordingIssues] = await Promise.all([
+  const [settings, timesheet, recordingIssues, overtime] = await Promise.all([
     getAppSettings(),
     getTimesheet(userId, "month", anchor, asOf),
     user.isMinijob ? findMinijobRecordingIssues({ fromKey: from, toKey: to, userId, asOf }) : [],
+    overtimeForMonth(userId, from, to, asOf),
   ]);
   const region = resolveRegion(user.bundesland, settings);
   const holidays = await getHolidaysInRange(region, from, to);
@@ -314,6 +357,7 @@ export async function buildMonthlyReport(
     },
     violations: timesheet.violations,
     recordingIssues,
+    overtime,
     absences: absenceRows.map((a) => ({
       type: a.type,
       from: fmtKey(a.startDate),

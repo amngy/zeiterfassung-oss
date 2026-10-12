@@ -237,6 +237,37 @@ Verfahrenssichernd gilt dabei:
 - Zeiterfassungsdaten (Stempelzeiten) sind davon nicht berührt; sie bleiben
   ausschließlich über den Korrekturweg aus Abschnitt 4 änderbar.
 
+### 6.3 Arbeitszeitkonto
+
+Für Beschäftigte, bei denen es eingerichtet ist, führt die Anwendung ein
+**Arbeitszeitkonto**: den täglichen Saldo aus 6.1, aufsummiert ab dem 1. des
+gewählten Startmonats, zuzüglich **Buchungen**. Der Stand wird bei jedem Abruf
+aus den gespeicherten Zeiten berechnet und nicht fortgeschrieben; eine
+Korrektur an einem alten Tag wirkt sich deshalb sofort aus.
+
+- **Buchungsarten:** Anfangssaldo (z. B. Übertrag aus einem früheren Verfahren),
+  Auszahlung und Verfall / Kappung (mindern das Konto stets), Korrektur (mit
+  Vorzeichen). Jede Buchung trägt Datum, Stunden, eine **Pflicht-Begründung**
+  und die buchende Person und wird protokolliert.
+- **Freizeitausgleich** wird nicht gebucht, sondern als Abwesenheit
+  „Freizeitausgleich“ erfasst: Der Tag schreibt nichts gut, seine Sollzeit
+  mindert das Konto von selbst.
+- **Unveränderbarkeit:** Buchungen werden weder geändert noch gelöscht. Eine
+  falsche Buchung wird **storniert** — durch eine Gegenbuchung mit dem Datum des
+  Stornos, die auf die ursprüngliche verweist. Bereits ausgewertete Monate
+  bleiben so unverändert.
+- **Grenzen:** Unter Einstellungen lassen sich eine Ober- und eine Untergrenze
+  festlegen. Ein Konto außerhalb wird markiert; gebucht wird **nichts
+  automatisch**, denn ob Stunden ausgezahlt werden oder verfallen, regeln
+  Arbeitsvertrag, Tarifvertrag oder Betriebsvereinbarung.
+- **Monatsexport:** PDF und CSV enthalten Übertrag aus dem Vormonat, Saldo des
+  Monats, die Buchungen des Monats und den Stand am Monatsende (im laufenden
+  Monat: Stand heute).
+- **Löschung nach Aufbewahrungsfrist** (Abschnitt 8): Bevor alte Aufzeichnungen
+  gelöscht werden, wird der Kontostand am letzten gelöschten Tag als
+  **Saldovortrag** zum 1. Januar des ersten aufbewahrten Jahres gebucht; das
+  Konto beginnt dort neu, frühere Buchungen entfallen.
+
 ## 7. Export zur Lohnabrechnung
 
 Pro Mitarbeiter:in und Monat stehen ein **PDF** (zahlungsbereiter Nachweis) und

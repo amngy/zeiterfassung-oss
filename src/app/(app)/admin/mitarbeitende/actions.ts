@@ -14,6 +14,8 @@ import {
 import { anonymizeUser } from "@/lib/dsgvo";
 import { TwoFactorError, resetTwoFactor } from "@/lib/two-factor";
 import { issueKioskPin, KioskPinError, removeKioskPin } from "@/lib/kiosk-pin";
+import { bookOvertime, OvertimeError, reverseOvertimeBooking, startOvertimeAccount } from "@/lib/overtime";
+import { MANUAL_OVERTIME_KINDS, parseHoursInput, type ManualOvertimeKind } from "@/lib/time";
 import {
   createUserSchema,
   updateUserSchema,
@@ -246,4 +248,83 @@ export async function removeKioskPinAction(formData: FormData): Promise<void> {
   await removeKioskPin({ actorId: admin.id, userId });
   refresh(userId);
   redirect(`/admin/mitarbeitende/${userId}?ok=1`);
+}
+
+// ── Arbeitszeitkonto (#22) ───────────────────────────────────────────────────
+
+async function overtimeAction(userId: string, run: () => Promise<void>, message: string): Promise<FormState> {
+  try {
+    await run();
+  } catch (e) {
+    if (e instanceof OvertimeError) return { error: e.message };
+    throw e;
+  }
+  refresh(userId);
+  revalidatePath("/zeiten");
+  return { ok: true, message };
+}
+
+function hoursField(formData: FormData, key: string, allowEmpty: boolean): number | null {
+  const raw = String(formData.get(key) ?? "").trim();
+  if (raw === "" && allowEmpty) return 0;
+  return parseHoursInput(raw);
+}
+
+export async function startOvertimeAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  const month = String(formData.get("fromMonth") ?? "");
+  const opening = hoursField(formData, "opening", true);
+  if (!/^\d{4}-\d{2}$/.test(month)) return { error: "Bitte den ersten Monat des Kontos wählen." };
+  if (opening === null) return { error: "Anfangssaldo bitte als Stunden angeben, z. B. 12:30 oder -4,5." };
+  return overtimeAction(
+    userId,
+    () =>
+      startOvertimeAccount({
+        actorId: admin.id,
+        userId,
+        fromKey: `${month}-01`,
+        openingMinutes: opening,
+        note: String(formData.get("note") ?? ""),
+      }),
+    "Arbeitszeitkonto eingerichtet.",
+  );
+}
+
+export async function bookOvertimeAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  const kind = String(formData.get("kind") ?? "") as ManualOvertimeKind;
+  const minutes = hoursField(formData, "hours", false);
+  if (!MANUAL_OVERTIME_KINDS.includes(kind)) return { error: "Bitte die Art der Buchung wählen." };
+  if (minutes === null) return { error: "Stunden bitte angeben, z. B. 8:00 oder 7,5." };
+  return overtimeAction(
+    userId,
+    () =>
+      bookOvertime({
+        actorId: admin.id,
+        userId,
+        kind,
+        dayKey: String(formData.get("day") ?? ""),
+        minutes,
+        note: String(formData.get("note") ?? ""),
+      }),
+    "Gebucht.",
+  );
+}
+
+export async function reverseOvertimeAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  return overtimeAction(
+    userId,
+    async () => {
+      await reverseOvertimeBooking({
+        actorId: admin.id,
+        bookingId: String(formData.get("bookingId") ?? ""),
+        note: String(formData.get("note") ?? ""),
+      });
+    },
+    "Storniert.",
+  );
 }

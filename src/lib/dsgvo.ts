@@ -19,9 +19,11 @@
 //   CorrectionRequest.reason      → "[anonymisiert]"  (column is NOT NULL)
 //   CorrectionRequest.decisionNote→ null
 //   WorkSchedule.note             → null
+//   OvertimeBooking.note          → null  (their Arbeitszeitkonto; minutes stay)
 //   AuditLog                      on rows ABOUT them (their User row, their
 //                                 entries / absences / corrections / schedules /
-//                                 batches, or a payload carrying their id):
+//                                 overtime bookings / batches, or a payload
+//                                 carrying their id):
 //                                 `name`, `email` and every free-text key inside
 //                                 oldValue/newValue → "[anonymisiert]", and the
 //                                 whole `reason` column → "[anonymisiert]".
@@ -62,7 +64,7 @@ export async function exportUserData(userId: string): Promise<unknown> {
   });
   if (!user) throw new UserError("Konto nicht gefunden.");
 
-  const [timeEntries, clockEvents, corrections, absences] = await Promise.all([
+  const [timeEntries, clockEvents, corrections, absences, overtimeBookings] = await Promise.all([
     prisma.timeEntry.findMany({ where: { userId }, orderBy: { start: "asc" } }),
     prisma.clockEvent.findMany({
       where: { userId },
@@ -71,6 +73,7 @@ export async function exportUserData(userId: string): Promise<unknown> {
     }),
     prisma.correctionRequest.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
     prisma.absence.findMany({ where: { userId }, orderBy: { startDate: "asc" } }),
+    prisma.overtimeBooking.findMany({ where: { userId }, orderBy: [{ day: "asc" }, { createdAt: "asc" }] }),
   ]);
 
   // Audit entries about this person: actions they performed OR records that are
@@ -80,6 +83,7 @@ export async function exportUserData(userId: string): Promise<unknown> {
     ...timeEntries.map((e) => e.id),
     ...corrections.map((c) => c.id),
     ...absences.map((a) => a.id),
+    ...overtimeBookings.map((b) => b.id),
   ];
   const auditLog = await prisma.auditLog.findMany({
     where: { OR: [{ actorUserId: userId }, { targetId: { in: targetIds } }] },
@@ -107,6 +111,7 @@ export async function exportUserData(userId: string): Promise<unknown> {
     clockEvents,
     correctionRequests: corrections,
     absences,
+    overtimeBookings,
     auditLog,
   };
 }
@@ -179,6 +184,7 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
         select: { id: true },
       });
       const schedules = await tx.workSchedule.findMany({ where: { userId }, select: { id: true } });
+      const bookings = await tx.overtimeBooking.findMany({ where: { userId }, select: { id: true } });
       const targetIds: string[] = [
         ...entries.map((e: { id: string }) => e.id),
         ...entries
@@ -187,6 +193,7 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
         ...absences.map((a: { id: string }) => a.id),
         ...corrections.map((c: { id: string }) => c.id),
         ...schedules.map((s: { id: string }) => s.id),
+        ...bookings.map((b: { id: string }) => b.id),
       ];
 
       const auditRowsRedacted = await redactAuditForSubject(tx, {
@@ -242,6 +249,10 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
         where: { userId, note: { not: null } },
         data: { note: null },
       });
+      const overtimeNotes = await tx.overtimeBooking.updateMany({
+        where: { userId, note: { not: null } },
+        data: { note: null },
+      });
       const correctionTexts = await tx.correctionRequest.updateMany({
         where: { userId },
         data: { reason: REDACTED, decisionNote: null },
@@ -260,6 +271,7 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
           workScheduleNotesCleared: scheduleNotes.count,
           clockDeviceLabelsCleared: deviceLabels.count,
           correctionTextsRedacted: correctionTexts.count,
+          overtimeNotesCleared: overtimeNotes.count,
         },
         reason: "DSGVO Art. 17 — Anonymisierung",
       });
