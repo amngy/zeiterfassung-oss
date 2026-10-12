@@ -40,3 +40,8 @@ Thumbs.db
 /tmp
 *.tsbuildinfo
 
+
+# Playwright
+/e2e/.auth/
+/test-results/
+/playwright-report/
