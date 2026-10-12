@@ -108,10 +108,13 @@ und Entfernen der Ausnahme wird protokolliert.
 - Die Administration kann einen Eintrag zusätzlich **aus der Wertung nehmen**
   („Entfernen"). Das ist kein Löschen: die Zeile wird wie bei einer Korrektur als
   *ersetzt* markiert, zählt nicht mehr in Nachweisen und Auswertungen, bleibt aber
-  im Rohdaten-Export und im Protokoll dauerhaft sichtbar. Der Weg ist notwendig für
+  im Rohdaten-Export mit Versionen und im Protokoll dauerhaft sichtbar. Der Weg ist notwendig für
   **Doppelerfassungen** — dieselbe Schicht mehrfach angelegt —, denn solange
   mehrere Einträge dieselbe Zeit abdecken, lässt sich keiner von ihnen korrigieren,
   ohne dass die Zeit doppelt gewertet würde. Auch hier gilt Begründungspflicht.
+- Unter „Einzelne Zeiten korrigieren" zeigt der **Verlauf** eines korrigierten
+  Eintrags alle früheren Fassungen mit Zeiten, ursprünglichen Stempelungen
+  (Erfassungsweg, ggf. Gerätetyp) sowie Zeitpunkt, Person und Grund der Änderung.
 - Jede Erstellung/Korrektur/Entscheidung wird mit **Akteur, Zeitpunkt, Alt-Wert,
   Neu-Wert und Pflicht-Begründung** in einem **append-only-Protokoll** festgehalten.
   Das Protokoll kennt keine Änderungsfunktion; gelöscht werden Einträge nur nach
@@ -218,7 +221,9 @@ Verfahrenssichernd gilt dabei:
 Pro Mitarbeiter:in und Monat stehen ein **PDF** (zahlungsbereiter Nachweis) und
 eine **CSV** (deutsches Format: Semikolon, Dezimalkomma, UTF-8) zur Verfügung,
 zusätzlich eine **Rohdaten-CSV** der einzelnen Erfassungen (auch
-Zoll-/MiLoG-tauglich, in deutscher Sprache). Die Exporte werden über
+Zoll-/MiLoG-tauglich, in deutscher Sprache). Die Variante „mit Versionen“
+enthält auch alle durch Korrekturen ersetzten oder aus der Wertung genommenen
+Fassungen (Status „ersetzt“). Die Exporte werden über
 zugriffsgeschützte Endpunkte ausschließlich von Administrator:innen erzeugt.
 
 ## 8. Aufbewahrung, Datenschutz, Sicherung
