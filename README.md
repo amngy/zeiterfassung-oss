@@ -283,6 +283,23 @@ matters most. Acceptance scenarios (over-10 h day, short break, <11 h rest,
 vacation spanning a weekend + holiday, half-days, per-schedule holiday handling)
 are covered by the unit tests.
 
+End-to-end tests (`e2e/`, Playwright) drive a production build in Chromium
+against a real PostgreSQL. They cover sign-in with the admin's second factor,
+clocking in and out, leave request and approval, back-fill and correction with
+version history, exports and access control. They change data, so run them on a
+fresh, seeded database:
+
+```bash
+npx prisma migrate deploy
+SEED_DEMO=true npm run db:seed
+npm run build
+npx playwright install chromium   # once
+npm run test:e2e                  # starts the app on :3123 itself
+```
+
+CI runs both suites on every pull request, the end-to-end tests against a
+Postgres service container.
+
 ---
 
 ## Contributing & security
