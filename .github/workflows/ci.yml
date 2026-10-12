@@ -26,3 +26,47 @@ jobs:
       - run: npm test
       - run: npm run lint
       - run: npm run build
+
+  e2e:
+    # Browser tests against a production build and a real, freshly seeded
+    # PostgreSQL (#27): sign-in with 2FA, clocking, leave approval, back-fill
+    # and correction, exports, access control.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: zeit
+          POSTGRES_PASSWORD: zeit
+          POSTGRES_DB: zeiterfassung
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zeit"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://zeit:zeit@localhost:5432/zeiterfassung?schema=public
+      AUTH_SECRET: ci-placeholder-not-a-secret
+      AUTH_TRUST_HOST: "true"
+      SEED_DEMO: "true"
+      SEED_ADMIN_PASSWORD: ci-admin-password-not-a-secret
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma migrate deploy
+      - run: npm run db:seed
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
