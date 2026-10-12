@@ -119,7 +119,7 @@ function StatusFlags({
           <input type="checkbox" name="isMinijob" defaultChecked={isMinijob} className="h-4 w-4 rounded border-black/20 accent-lime" />
           <span className="text-ink">Minijob (MiLoG §17 — 7-Tage-Frist)</span>
         </label>
-        <InfoHint>{`Kennzeichnet das Konto als Minijob; der Vermerk erscheint auf den Monatsberichten (PDF/CSV). Die 7-Tage-Aufzeichnungsfrist nach MiLoG §17 wird dadurch NICHT automatisch überwacht.`}</InfoHint>
+        <InfoHint>{`Kennzeichnet das Konto als Minijob; der Vermerk erscheint auf den Monatsberichten (PDF/CSV). Für Minijob-Konten wird die Aufzeichnungsfrist nach MiLoG §17 überwacht (Beginn, Ende und Dauer bis zum Ablauf des siebten Folgetags): Einträge, deren Ende fehlt oder die erst nach Ablauf der Frist vollständig erfasst wurden, erscheinen unter „Korrekturen“, in „Alle Zeiten“ und im Monatsbericht.`}</InfoHint>
       </div>
       <div className="flex items-center gap-1.5">
         <label className="flex items-center gap-2.5 text-sm">

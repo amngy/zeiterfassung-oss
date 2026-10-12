@@ -10,6 +10,7 @@ export * from "./absence";
 export * from "./absence-kinds";
 export * from "./sick-note";
 export * from "./remote-review";
+export * from "./minijob";
 export * from "./day";
 export * from "./format";
 export * from "./compliance";

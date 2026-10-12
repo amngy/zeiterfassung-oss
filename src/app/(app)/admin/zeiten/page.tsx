@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { describePunches, loadEntryHistories, PUNCH_SELECT } from "@/lib/entry-history";
 import { getTimesheet } from "@/lib/timesheet";
 import { findRemoteReviewFlags, reviewStateByDay } from "@/lib/punch-review";
+import { findMinijobRecordingIssues } from "@/lib/minijob-deadline";
 import {
   addDaysToKey,
   berlinDayKey,
@@ -16,6 +17,7 @@ import {
   formatDayKey,
   formatMonth,
   monthRangeOf,
+  recordingIssueText,
 } from "@/lib/time";
 import {
   Card,
@@ -121,7 +123,7 @@ export default async function AdminTimesheetsPage({
 
   const employees = await prisma.user.findMany({
     orderBy: [{ active: "desc" }, { name: "asc" }],
-    select: { id: true, name: true, active: true },
+    select: { id: true, name: true, active: true, isMinijob: true },
   });
 
   const selectedId = employees.find((e) => e.id === user)?.id ?? employees[0]?.id ?? "";
@@ -145,6 +147,10 @@ export default async function AdminTimesheetsPage({
         await findRemoteReviewFlags({ fromKey: from, toKey: to, userId: selectedId, period: timesheet.period }),
       )
     : {};
+
+  const recordingIssues = employees.find((e) => e.id === selectedId)?.isMinijob
+    ? await findMinijobRecordingIssues({ fromKey: from, toKey: to, userId: selectedId })
+    : [];
 
   const linkFor = (m: string) => `/admin/zeiten?user=${selectedId}&monat=${m}`;
 
@@ -263,6 +269,19 @@ export default async function AdminTimesheetsPage({
                 In diesem Monat gibt es einen offenen Eintrag (vermutlich vergessenes Ausstempeln) —
                 bitte über eine Korrektur richtigstellen.
               </span>
+            </div>
+          )}
+
+          {recordingIssues.length > 0 && (
+            <div className="rounded-xl border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
+              <p className="font-medium">Minijob: Aufzeichnungsfrist nach MiLoG §17 nicht eingehalten oder offen</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                {recordingIssues.map((r) => (
+                  <li key={r.entryId}>
+                    {formatDayKey(r.dayKey)}: {recordingIssueText(r)}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

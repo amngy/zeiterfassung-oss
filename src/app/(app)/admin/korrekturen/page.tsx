@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/session";
 import { getPendingCorrections } from "@/lib/corrections";
 import { getAppSettings } from "@/lib/settings";
 import { findRemoteReviewFlags } from "@/lib/punch-review";
+import { findMinijobRecordingIssues } from "@/lib/minijob-deadline";
+import { prisma } from "@/lib/db";
 import {
   addDaysToKey,
   berlinDayKey,
@@ -12,6 +14,7 @@ import {
   formatDayKey,
   formatHm,
   formatSigned,
+  recordingIssueText,
 } from "@/lib/time";
 import {
   Card,
@@ -35,11 +38,13 @@ function proposed(start: Date | null, end: Date | null): string {
 export default async function AdminCorrectionsPage() {
   await requireAdmin();
   const todayKey = berlinDayKey(new Date());
-  const [pending, settings, flags] = await Promise.all([
+  const [pending, settings, flags, minijobAccounts, recording] = await Promise.all([
     getPendingCorrections(),
     getAppSettings(),
     // Two months back: old enough to catch a month-end review, short enough to stay cheap.
     findRemoteReviewFlags({ fromKey: addDaysToKey(todayKey, -61), toKey: todayKey }),
+    prisma.user.count({ where: { isMinijob: true, active: true } }),
+    findMinijobRecordingIssues({ fromKey: addDaysToKey(todayKey, -61), toKey: todayKey }),
   ]);
   const threshold = settings.punchPolicy.reviewRemoteOvertimeMinutes;
   const openFlags = flags.filter((f) => !f.reviewedAt);
@@ -101,6 +106,52 @@ export default async function AdminCorrectionsPage() {
                         </button>
                       </form>
                     </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {(minijobAccounts > 0 || recording.length > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex flex-wrap items-center gap-1.5 text-base">
+              Minijob: Aufzeichnungsfrist (MiLoG §17)
+              {recording.length > 0 && (
+                <Badge tone={recording.some((r) => r.state !== "open") ? "danger" : "warning"}>
+                  {recording.length}
+                </Badge>
+              )}
+              <InfoHint>{`Für Minijob-Konten müssen Beginn, Ende und Dauer der Arbeitszeit spätestens bis zum Ablauf des siebten auf den Arbeitstag folgenden Kalendertages aufgezeichnet sein (§ 17 Abs. 1 MiLoG). Aufgeführt sind Einträge der letzten zwei Monate, deren Ende noch fehlt oder die erst nach Ablauf der Frist vollständig erfasst wurden. Eine spätere Korrektur eines rechtzeitig erfassten Eintrags gilt nicht als verspätet. Ein fehlendes Ende über „Monat ansehen“ nachtragen; verspätete Einträge lassen sich nicht mehr heilen, sie sind hier und im Monatsbericht dokumentiert.`}</InfoHint>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recording.length === 0 ? (
+              <p className="text-sm text-muted">Alle Minijob-Zeiten sind fristgerecht erfasst.</p>
+            ) : (
+              <ul className="space-y-2">
+                {recording.map((r) => (
+                  <li
+                    key={r.entryId}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm"
+                  >
+                    <div>
+                      <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
+                        {r.userName} · {formatDayKey(r.dayKey)}
+                        <Badge tone={r.state === "open" ? "warning" : "danger"}>
+                          {r.state === "open" ? "Frist läuft" : r.state === "overdue" ? "Frist abgelaufen" : "verspätet"}
+                        </Badge>
+                      </p>
+                      <p className="text-muted">{recordingIssueText(r)}</p>
+                    </div>
+                    <Link
+                      href={`/admin/zeiten?user=${r.userId}&monat=${r.dayKey.slice(0, 7)}`}
+                      className="text-xs font-medium text-teal hover:underline"
+                    >
+                      Monat ansehen
+                    </Link>
                   </li>
                 ))}
               </ul>
