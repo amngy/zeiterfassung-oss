@@ -12,6 +12,7 @@ import {
   breakPolicySchema,
   correctionPolicySchema,
   punchPolicySchema,
+  overtimeLimitsSchema,
 } from "@/lib/validation/settings";
 
 // Every save below writes its setting(s) AND its audit record inside a single
@@ -186,6 +187,24 @@ export async function savePunchPolicyAction(
   });
   refresh();
   return { section: "punchPolicy", ok: true, message: "Stempel-Einstellungen gespeichert." };
+}
+
+export async function saveOvertimeLimitsAction(
+  _prev: SettingsState | undefined,
+  formData: FormData,
+): Promise<SettingsState> {
+  const admin = await requireAdmin();
+  const parsed = overtimeLimitsSchema.safeParse({
+    capHours: num(formData, "capHours"),
+    floorHours: num(formData, "floorHours"),
+  });
+  if (!parsed.success) return { section: "overtimeLimits", error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe." };
+  await prisma.$transaction(async (tx) => {
+    await setSetting("overtimeLimits", parsed.data, tx);
+    await audit(tx, admin.id, "settings.overtimeLimits", parsed.data);
+  });
+  refresh();
+  return { section: "overtimeLimits", ok: true, message: "Grenzen des Arbeitszeitkontos gespeichert." };
 }
 
 async function audit(

@@ -15,6 +15,7 @@ import {
   BreakPolicyForm,
   CorrectionPolicyForm,
   PunchPolicyForm,
+  OvertimeLimitsForm,
 } from "./settings-forms";
 
 export const metadata: Metadata = { title: "Einstellungen" };
@@ -110,6 +111,18 @@ export default async function AdminSettingsPage() {
         </CardHeader>
         <CardContent>
           <PunchPolicyForm s={s} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Arbeitszeitkonto — Grenzen</CardTitle>
+          <CardDescription>
+            Ab wann ein Konto als zu hoch oder zu niedrig markiert wird. Gebucht wird nur von Hand.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <OvertimeLimitsForm s={s} />
         </CardContent>
       </Card>
 

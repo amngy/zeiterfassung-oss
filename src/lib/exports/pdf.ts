@@ -10,6 +10,7 @@ import {
   dayHours,
   dayNote,
   displayTotals,
+  overtimeLines,
   OPEN_ENTRY_WARNING,
   AUTO_BREAK_WARNING,
   type MonthlyReport,
@@ -360,6 +361,26 @@ export async function monthlyReportPdf(report: MonthlyReport): Promise<Uint8Arra
       c.text(`${formatDayKey(v.date)}: ${v.message}`, { size: 8, color: DANGER });
       c.move(11);
     }
+    c.move(8);
+  }
+
+  // ── Arbeitszeitkonto (#22) ──
+  const overtime = overtimeLines(report);
+  if (overtime) {
+    c.ensure(40);
+    c.text("Arbeitszeitkonto", { bold: true, size: 11, color: TEAL });
+    c.move(15);
+    const line = (label: string, hours: number, bold = false) => {
+      c.ensure(13);
+      c.text(`${label}: ${signedDec(hours)} h`, { size: 9, color: INK, bold });
+      c.move(12);
+    };
+    line("Übertrag", overtime.carryInHours);
+    line(overtime.monthLabel, overtime.monthHours);
+    for (const b of overtime.bookings) {
+      line(`${b.label} ${formatDayKey(b.dayKey)}${b.note ? ` (${b.note})` : ""}`, b.hours);
+    }
+    line(overtime.endLabel, overtime.endHours, true);
     c.move(8);
   }
 

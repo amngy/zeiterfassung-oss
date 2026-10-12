@@ -24,6 +24,11 @@
 // then anyway. Without an Austrittsdatum nobody can tell when the period
 // started, so such accounts are listed but left alone.
 //
+// Arbeitszeitkonten (#22): an account that started before the cutoff would
+// lose the days behind its balance, so the balance at the end of the last
+// deleted day is booked as a carry forward on 1 January of the cutoff year,
+// the account restarts there, and its earlier bookings go.
+//
 // WHAT STAYS: work schedules and holidays (the time model, not records about a
 // day), active accounts, and the one audit row the purge itself writes.
 //
@@ -34,6 +39,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { writeAudit } from "@/lib/audit";
 import { anonymizeUser } from "@/lib/dsgvo";
+import { applyCarryForwards, carryForwardsBefore } from "@/lib/overtime";
 import { getAppSettings } from "@/lib/settings";
 import { berlinDayKey, berlinDayRange } from "@/lib/time";
 import { deviceLabelCutoff, effectiveRetentionYears, retentionCutoffYear } from "@/lib/time/retention";
@@ -172,8 +178,12 @@ export async function purgeExpiredRecords(actorId: string, asOf: Date = new Date
   const { retentionYears: configuredYears, punchPolicy } = await getAppSettings();
   const s = scopeFor(asOf, configuredYears, punchPolicy.deviceLabelMonths);
   const w = wheres(s);
+  const cutoffKey = `${s.cutoffYear}-01-01`;
+  // Read before the transaction: the balances need the records it deletes.
+  const carries = await carryForwardsBefore(cutoffKey, asOf);
 
   const counts = await prisma.$transaction(async (tx) => {
+    await applyCarryForwards(tx, cutoffKey, carries, actorId);
     // Counted first: cascaded clock events report no count of their own.
     const clockEvents = await tx.clockEvent.count({ where: w.clockEvent });
     const timeEntries = (await tx.timeEntry.deleteMany({ where: w.timeEntry })).count;

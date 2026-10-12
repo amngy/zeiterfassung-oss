@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { BRAND } from "@/config/brand";
 import { prisma } from "@/lib/db";
+import type { OvertimeLimits } from "@/lib/time/overtime";
 
 // Accept either the root client or a transaction client, so a group of settings
 // and the audit row that records them can be written in ONE transaction.
@@ -90,6 +91,7 @@ export interface AppSettings {
   breakPolicy: BreakPolicy; // Pausenautomatik
   correctionPolicy: CorrectionPolicy;
   punchPolicy: PunchPolicy;
+  overtimeLimits: OvertimeLimits; // Arbeitszeitkonto warnings (#22)
 }
 
 // Sensible legal defaults. The operator can change every value in the admin UI;
@@ -143,6 +145,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     autoLockOnMonthExport: true,
   },
   punchPolicy: { recordDeviceType: false, reviewRemoteOvertimeMinutes: 60, deviceLabelMonths: 3 },
+  overtimeLimits: { capHours: 0, floorHours: 0 },
 };
 
 type SettingKey = keyof AppSettings;

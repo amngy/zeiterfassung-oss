@@ -74,6 +74,12 @@ export const punchPolicySchema = z.object({
   deviceLabelMonths: num(1, 24).pipe(z.number().int("Bitte ganze Monate angeben")),
 });
 
+/** Arbeitszeitkonto limits (#22): warnings only, 0 = none. */
+export const overtimeLimitsSchema = z.object({
+  capHours: num(0, 2000).pipe(z.number().int("Bitte ganze Stunden angeben")),
+  floorHours: num(0, 2000).pipe(z.number().int("Bitte ganze Stunden angeben")),
+});
+
 export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;
 export type RuleProfileInput = z.infer<typeof ruleProfileSchema>;
 export type BreakPolicyInput = z.infer<typeof breakPolicySchema>;

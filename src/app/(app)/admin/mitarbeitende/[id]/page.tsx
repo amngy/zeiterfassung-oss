@@ -6,7 +6,10 @@ import { requireAdmin } from "@/lib/session";
 import { getUserDetail } from "@/lib/users";
 import { MAX_PIN_FAILURES, PIN_BLOCK_MINUTES } from "@/lib/kiosk-pin";
 import { getVacationAccount } from "@/lib/absences";
-import { berlinDayKey, formatClock, formatDayKey, formatDays, type WeekdayHours } from "@/lib/time";
+import { berlinDayKey, formatClock, formatDayKey, formatDays, formatHm, formatSigned, type WeekdayHours } from "@/lib/time";
+import { getOvertimeAccount } from "@/lib/overtime";
+import { getAppSettings } from "@/lib/settings";
+import { OvertimeBookings } from "@/components/overtime-bookings";
 import {
   Card,
   CardContent,
@@ -18,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { InfoHint } from "@/components/ui/info-hint";
 import { ProfileForm, ScheduleForm, ResetPasswordForm, KioskPinForm } from "../forms";
 import { toggleActiveAction, anonymizeUserAction, resetTwoFactorAction, removeKioskPinAction } from "../actions";
+import { BookOvertimeForm, ReverseBookingForm, StartOvertimeForm } from "../overtime-forms";
 
 export const metadata: Metadata = { title: "Konto verwalten" };
 
@@ -52,7 +56,12 @@ export default async function AdminEmployeeDetailPage({
   // that applies today; every older row only covers its own past period.
   const currentScheduleId = user.schedules.find((s) => s.effectiveFrom <= todayKey)?.id;
   const year = Number(todayKey.slice(0, 4));
-  const account = await getVacationAccount(id, year);
+  const [account, overtime, settings] = await Promise.all([
+    getVacationAccount(id, year),
+    getOvertimeAccount(id, now),
+    getAppSettings(),
+  ]);
+  const limits = settings.overtimeLimits;
 
   return (
     <div className="space-y-6">
@@ -203,6 +212,53 @@ export default async function AdminEmployeeDetailPage({
               </div>
             ))}
           </dl>
+        </CardContent>
+      </Card>
+
+      {/* ── Arbeitszeitkonto (#22) ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-1.5 text-base">
+            Arbeitszeitkonto
+            <InfoHint>{`Der tägliche Saldo (Ist + Abwesenheit − Soll) ab Beginn des Kontos, plus Buchungen: Anfangssaldo, Auszahlung, Verfall / Kappung und Korrekturen. Freizeitausgleich wird als Abwesenheit „Freizeitausgleich“ eingetragen und mindert das Konto von selbst. Buchungen werden nie geändert oder gelöscht; ein Fehler wird storniert (Gegenbuchung mit heutigem Datum, frühere Monate bleiben wie ausgewertet). Alles wird protokolliert.`}</InfoHint>
+          </CardTitle>
+          <CardDescription>
+            {overtime
+              ? `Geführt seit ${formatDayKey(overtime.fromKey)}. Stand heute einschließlich der heutigen Sollzeit, wie in „Meine Zeiten“.`
+              : "Für diese Person wird noch kein Arbeitszeitkonto geführt."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {overtime ? (
+            <>
+              <div className="flex flex-wrap items-end gap-6">
+                <div>
+                  <p className="text-xs text-muted">Stand heute</p>
+                  <p className={`font-mono text-2xl font-semibold tabular-nums ${overtime.balanceMs < 0 ? "text-danger" : "text-ink"}`}>
+                    {formatSigned(overtime.balanceMs)}
+                  </p>
+                </div>
+                <p className="text-sm text-muted">
+                  Arbeitszeit {formatSigned(overtime.workMs)} · Buchungen {formatSigned(overtime.bookedMs)}
+                </p>
+                {overtime.overCapMs > 0 && (
+                  <Badge tone="warning">{formatHm(overtime.overCapMs)} über der Obergrenze von {limits.capHours} h</Badge>
+                )}
+                {overtime.underFloorMs > 0 && (
+                  <Badge tone="danger">{formatHm(overtime.underFloorMs)} unter der Untergrenze von −{limits.floorHours} h</Badge>
+                )}
+              </div>
+              {user.active && !user.anonymizedAt && (
+                <BookOvertimeForm userId={user.id} todayKey={todayKey} fromKey={overtime.fromKey} />
+              )}
+              <OvertimeBookings
+                bookings={overtime.bookings}
+                action={user.anonymizedAt ? undefined : (b) => <ReverseBookingForm userId={user.id} bookingId={b.id} />}
+              />
+            </>
+          ) : user.active && !user.anonymizedAt ? (
+            <StartOvertimeForm userId={user.id} defaultMonth={todayKey.slice(0, 7)} />
+          ) : null}
         </CardContent>
       </Card>
 

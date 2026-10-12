@@ -142,6 +142,10 @@ model User {
   employmentStart DateTime? @db.Date // Wartezeit & Zwölftelung
   employmentEnd   DateTime? @db.Date
 
+  // Arbeitszeitkonto (#22): the first day (always the 1st of a month) from
+  // which the daily balance is summed up. Null → no account is kept.
+  overtimeAccountFrom DateTime? @db.Date
+
   // Login throttling / lockout (security hardening).
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
@@ -169,14 +173,15 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  schedules      WorkSchedule[]
-  timeEntries    TimeEntry[]
-  clockEvents    ClockEvent[]
-  punchReviews   PunchReview[] @relation("PunchReviewer")
-  absences       Absence[]
-  corrections    CorrectionRequest[]
-  vacationYears  VacationYear[]
-  recoveryCodes  RecoveryCode[]
+  schedules        WorkSchedule[]
+  timeEntries      TimeEntry[]
+  clockEvents      ClockEvent[]
+  punchReviews     PunchReview[]       @relation("PunchReviewer")
+  absences         Absence[]
+  corrections      CorrectionRequest[]
+  vacationYears    VacationYear[]
+  recoveryCodes    RecoveryCode[]
+  overtimeBookings OvertimeBooking[]
 
   @@index([active])
 }
@@ -372,8 +377,8 @@ model Absence {
   // spell that turned out to be sickness, …). The absence row itself is edited
   // in place — unlike TimeEntry it is a decision, not a punch — so these three
   // fields plus the audit log are what make the change accountable afterwards.
-  correctedById String?
-  correctedAt   DateTime?
+  correctedById    String?
+  correctedAt      DateTime?
   correctionReason String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -419,7 +424,9 @@ model Setting {
 // drift and offer to drop the table.
 model LoginThrottle {
   ip     String
-  /** Empty string = the per-source bucket; a user id = that account's bucket. */
+  /**
+   * Empty string = the per-source bucket; a user id = that account's bucket.
+   */
   userId String @default("")
 
   failures       Int      @default(0)
@@ -464,21 +471,35 @@ model VacationYear {
   userId String
   year   Int
 
-  /** Gesetzlicher Mindesturlaub for this year (BUrlG §3), after §5 pro-rating. */
-  statutoryDays  Float
-  /** Contractual extra days for this year. */
-  additionalDays Float
-  /** Brought forward from the previous year. */
-  carryOverDays  Float @default(0)
-  /** SGB IX §208 bonus granted for this year. */
+  /**
+   * Gesetzlicher Mindesturlaub for this year (BUrlG §3), after §5 pro-rating.
+   */
+  statutoryDays       Float
+  /**
+   * Contractual extra days for this year.
+   */
+  additionalDays      Float
+  /**
+   * Brought forward from the previous year.
+   */
+  carryOverDays       Float @default(0)
+  /**
+   * SGB IX §208 bonus granted for this year.
+   */
   disabilityBonusDays Float @default(0)
 
-  /** Days that lapsed at the §7(3) cutoff, if forfeiture was lawfully applied. */
-  forfeitedDays Float @default(0)
-  /** Set when the statutory duty-to-warn was discharged for THIS year's leave. */
+  /**
+   * Days that lapsed at the §7(3) cutoff, if forfeiture was lawfully applied.
+   */
+  forfeitedDays  Float     @default(0)
+  /**
+   * Set when the statutory duty-to-warn was discharged for THIS year's leave.
+   */
   reminderSentAt DateTime?
 
-  /** Why the statutory part was (or was not) pro-rated — a TeilurlaubReason. */
+  /**
+   * Why the statutory part was (or was not) pro-rated — a TeilurlaubReason.
+   */
   teilurlaubReason String?
   note             String?
 
@@ -508,4 +529,40 @@ model AuditLog {
   @@index([targetType, targetId])
   @@index([actorUserId])
   @@index([createdAt])
+}
+
+// Arbeitszeitkonto (#22): what moves the balance besides the worked time —
+// opening balance, payout, forfeiture, corrections, and the carry forward the
+// retention purge writes before it deletes old records (#17). Never changed or
+// deleted (except by that purge): a wrong booking is reversed by a counter
+// booking that points at it.
+enum OvertimeBookingKind {
+  OPENING // Anfangssaldo when the account starts
+  PAYOUT // Auszahlung (reduces the balance)
+  FORFEIT // Verfall / Kappung (reduces the balance)
+  ADJUSTMENT // Korrektur, either sign
+  CARRY_FORWARD // Saldovortrag written by the retention purge
+}
+
+model OvertimeBooking {
+  id          String              @id @default(cuid())
+  userId      String
+  kind        OvertimeBookingKind
+  /// Berlin day the booking takes effect on.
+  day         DateTime            @db.Date
+  /// Signed: positive adds to the balance, negative takes from it.
+  minutes     Int
+  /// Reason; cleared on anonymisation.
+  note        String?
+  createdById String?
+  createdAt   DateTime            @default(now())
+
+  /// Set on a counter booking: the booking it reverses (at most once).
+  reversesId String?          @unique
+  reverses   OvertimeBooking? @relation("OvertimeReversal", fields: [reversesId], references: [id], onDelete: SetNull)
+  reversedBy OvertimeBooking? @relation("OvertimeReversal")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, day])
 }
