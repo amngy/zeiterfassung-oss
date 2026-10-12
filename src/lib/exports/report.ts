@@ -16,6 +16,7 @@ import {
   type Violation,
 } from "@/lib/time";
 import type { RawEntryRow } from "./csv";
+import { findMinijobRecordingIssues, type RecordingIssue } from "@/lib/minijob-deadline";
 import { ABSENCE_LABEL } from "@/lib/time/absence-kinds";
 import type { AbsenceKind } from "@/lib/time/types";
 
@@ -68,6 +69,8 @@ export interface MonthlyReport {
   days: ReportDayRow[];
   totals: ReportTotals;
   violations: Violation[];
+  /** Minijob only: entries whose MiLoG §17 recording is open or was late. */
+  recordingIssues: RecordingIssue[];
   absences: { type: AbsenceKind; from: string; to: string; days: number; note: string | null }[];
   generatedAtKey: string;
   companyName: string;
@@ -228,9 +231,10 @@ export async function buildMonthlyReport(
   });
   if (!user) return null;
 
-  const [settings, timesheet] = await Promise.all([
+  const [settings, timesheet, recordingIssues] = await Promise.all([
     getAppSettings(),
     getTimesheet(userId, "month", anchor, asOf),
+    user.isMinijob ? findMinijobRecordingIssues({ fromKey: from, toKey: to, userId, asOf }) : [],
   ]);
   const region = resolveRegion(user.bundesland, settings);
   const holidays = await getHolidaysInRange(region, from, to);
@@ -309,6 +313,7 @@ export async function buildMonthlyReport(
       balanceToDateMs: includesToday ? timesheet.period.balanceMs : null,
     },
     violations: timesheet.violations,
+    recordingIssues,
     absences: absenceRows.map((a) => ({
       type: a.type,
       from: fmtKey(a.startDate),
