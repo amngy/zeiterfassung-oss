@@ -13,6 +13,7 @@ import {
 } from "@/lib/users";
 import { anonymizeUser } from "@/lib/dsgvo";
 import { TwoFactorError, resetTwoFactor } from "@/lib/two-factor";
+import { issueKioskPin, KioskPinError, removeKioskPin } from "@/lib/kiosk-pin";
 import {
   createUserSchema,
   updateUserSchema,
@@ -215,6 +216,34 @@ export async function anonymizeUserAction(formData: FormData): Promise<void> {
     if (!(e instanceof UserError)) throw e;
     redirect(`/admin/mitarbeitende/${userId}?fehler=${encodeURIComponent(e.message)}`);
   }
+  refresh(userId);
+  redirect(`/admin/mitarbeitende/${userId}?ok=1`);
+}
+
+export interface KioskPinState {
+  pin?: string;
+  error?: string;
+}
+
+/** A new random terminal PIN (#11), shown once in the form. */
+export async function issueKioskPinAction(_prev: KioskPinState, formData: FormData): Promise<KioskPinState> {
+  const admin = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  try {
+    const pin = await issueKioskPin({ actorId: admin.id, userId });
+    revalidatePath(`/admin/mitarbeitende/${userId}`);
+    return { pin };
+  } catch (e) {
+    if (e instanceof KioskPinError) return { error: e.message };
+    throw e;
+  }
+}
+
+export async function removeKioskPinAction(formData: FormData): Promise<void> {
+  const admin = await requireAdmin();
+  const userId = String(formData.get("userId") ?? "");
+  if (!userId) return;
+  await removeKioskPin({ actorId: admin.id, userId });
   refresh(userId);
   redirect(`/admin/mitarbeitende/${userId}?ok=1`);
 }

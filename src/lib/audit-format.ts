@@ -111,6 +111,7 @@ const DESTRUCTIVE = new Set<string>([
   "user.anonymize",
   "user.2fa.disable",
   "user.2fa.reset",
+  "user.pin.remove",
   "holiday.delete",
   "retention.purge",
 ]);
@@ -168,6 +169,8 @@ const ACTIONS: Record<string, ActionMeta> = {
   "user.2fa.reset": { label: "Zwei-Faktor-Anmeldung zurückgesetzt", category: "konto" },
   "user.2fa.recovery.use": { label: "Anmeldung mit Wiederherstellungscode", category: "konto" },
   "user.2fa.recovery.renew": { label: "Wiederherstellungscodes neu erzeugt", category: "konto" },
+  "user.pin.set": { label: "Terminal-PIN vergeben", category: "konto" },
+  "user.pin.remove": { label: "Terminal-PIN entfernt", category: "konto" },
 
   // Feiertage
   "holiday.seed": { label: "Feiertage importiert", category: "feiertag" },
@@ -188,6 +191,8 @@ const ACTIONS: Record<string, ActionMeta> = {
   "terminal.pair": { label: "Terminal gekoppelt", category: "einstellung" },
   "terminal.activate": { label: "Terminal aktiviert", category: "einstellung" },
   "terminal.deactivate": { label: "Terminal deaktiviert", category: "einstellung" },
+  "terminal.pin.on": { label: "Stempeln mit PIN am Terminal eingeschaltet", category: "einstellung" },
+  "terminal.pin.off": { label: "Stempeln mit PIN am Terminal ausgeschaltet", category: "einstellung" },
 
   // System
   "retention.purge": { label: "Abgelaufene Daten gelöscht (Aufbewahrung)", category: "system" },

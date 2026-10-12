@@ -95,6 +95,9 @@ export interface UserDetail {
   vacationCarryOverDays: number;
   anonymizedAt: Date | null;
   twoFactorEnabled: boolean;
+  /** A terminal PIN is set (#11); when PIN punching is blocked after wrong PINs. */
+  kioskPinSet: boolean;
+  kioskPinBlockedUntil: Date | null;
   schedules: {
     id: string;
     effectiveFrom: string;
@@ -124,6 +127,8 @@ export async function getUserDetail(userId: string): Promise<UserDetail | null> 
     vacationCarryOverDays: u.vacationCarryOverDays,
     anonymizedAt: u.anonymizedAt,
     twoFactorEnabled: !!u.totpEnabledAt,
+    kioskPinSet: !!u.kioskPinHash,
+    kioskPinBlockedUntil: u.kioskPinBlockedUntil,
     schedules: u.schedules.map((s) => {
       const hours = scheduleToHours(s);
       return {

@@ -4,8 +4,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Download, FileJson, ShieldAlert } from "lucide-react";
 import { requireAdmin } from "@/lib/session";
 import { getUserDetail } from "@/lib/users";
+import { MAX_PIN_FAILURES, PIN_BLOCK_MINUTES } from "@/lib/kiosk-pin";
 import { getVacationAccount } from "@/lib/absences";
-import { berlinDayKey, formatDayKey, formatDays, type WeekdayHours } from "@/lib/time";
+import { berlinDayKey, formatClock, formatDayKey, formatDays, type WeekdayHours } from "@/lib/time";
 import {
   Card,
   CardContent,
@@ -15,8 +16,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InfoHint } from "@/components/ui/info-hint";
-import { ProfileForm, ScheduleForm, ResetPasswordForm } from "../forms";
-import { toggleActiveAction, anonymizeUserAction, resetTwoFactorAction } from "../actions";
+import { ProfileForm, ScheduleForm, ResetPasswordForm, KioskPinForm } from "../forms";
+import { toggleActiveAction, anonymizeUserAction, resetTwoFactorAction, removeKioskPinAction } from "../actions";
 
 export const metadata: Metadata = { title: "Konto verwalten" };
 
@@ -45,7 +46,8 @@ export default async function AdminEmployeeDetailPage({
   const user = await getUserDetail(id);
   if (!user) notFound();
 
-  const todayKey = berlinDayKey(new Date());
+  const now = new Date();
+  const todayKey = berlinDayKey(now);
   // Schedules arrive newest first, so the first one already in force is the one
   // that applies today; every older row only covers its own past period.
   const currentScheduleId = user.schedules.find((s) => s.effectiveFrom <= todayKey)?.id;
@@ -276,6 +278,30 @@ export default async function AdminEmployeeDetailPage({
                 </form>
               )}
               <InfoHint>{`Für verlorene Handys ohne Wiederherstellungscodes: entfernt App-Verknüpfung und Codes. Danach genügt das Passwort, bis die Person neu einrichtet — bei Konten mit Verwaltungsrechten wird das sofort nach der Anmeldung verlangt. Das eigene Konto wird unter „Mein Konto“ verwaltet. Wird protokolliert.`}</InfoHint>
+            </div>
+          )}
+
+          {!user.anonymizedAt && user.active && (
+            <div className="space-y-3 border-t border-black/[0.06] pt-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm text-ink">
+                  Terminal-PIN:{" "}
+                  {user.kioskPinSet ? <Badge tone="lime">vergeben</Badge> : <Badge tone="neutral">keine</Badge>}
+                </span>
+                {user.kioskPinBlockedUntil && user.kioskPinBlockedUntil > now && (
+                  <Badge tone="danger">gesperrt bis {formatClock(user.kioskPinBlockedUntil)} Uhr</Badge>
+                )}
+                {user.kioskPinSet && (
+                  <form action={removeKioskPinAction}>
+                    <input type="hidden" name="userId" value={user.id} />
+                    <button className="rounded-xl border border-danger/30 px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10">
+                      PIN entfernen
+                    </button>
+                  </form>
+                )}
+                <InfoHint>{`Für Personen ohne Smartphone: Am Stempel-Terminal Namen antippen und die sechsstellige PIN eingeben. Funktioniert nur an Terminals, an denen „Stempeln mit PIN“ eingeschaltet ist (Verwaltung → Terminals). Die PIN wird nur einmal angezeigt; eine neue ersetzt die alte. Nach ${MAX_PIN_FAILURES} falschen Versuchen ist die PIN ${PIN_BLOCK_MINUTES} Minuten gesperrt. Wird protokolliert.`}</InfoHint>
+              </div>
+              <KioskPinForm userId={user.id} hasPin={user.kioskPinSet} />
             </div>
           )}
 

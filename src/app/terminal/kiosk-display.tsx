@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { BRAND } from "@/config/brand";
+import { PinPunch } from "./pin-punch";
 
 // Shows the terminal's rotating QR code, fetched from /terminal/code just after
 // each change. A code is accepted for 60 s past its own window, so a short
@@ -14,7 +15,18 @@ const FETCH_TIMEOUT_MS = 8_000;
 
 type Status = "loading" | "ok" | "offline" | "unpaired";
 
-export function KioskDisplay({ label, signedInWarning }: { label: string; signedInWarning: boolean }) {
+export function KioskDisplay({
+  label,
+  signedInWarning,
+  pinPeople,
+}: {
+  label: string;
+  signedInWarning: boolean;
+  /** People who can punch here with a PIN; null where the terminal does not allow it. */
+  pinPeople: { id: string; name: string }[] | null;
+}) {
+  const [pinMode, setPinMode] = React.useState(false);
+  const leavePin = React.useCallback(() => setPinMode(false), []);
   const [svg, setSvg] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<Status>("loading");
   const [now, setNow] = React.useState(() => new Date());
@@ -116,30 +128,45 @@ export function KioskDisplay({ label, signedInWarning }: { label: string; signed
           <p className="font-mono text-6xl font-semibold tabular-nums">{time}</p>
           <p className="mt-1 text-base opacity-80">{date}</p>
         </div>
-        <div className="rounded-3xl bg-white p-4 shadow-lg">
-          {svg ? (
-            <div
-              className="h-[min(60vh,80vw)] w-[min(60vh,80vw)] [&>svg]:h-full [&>svg]:w-full"
-              // Server-generated SVG of our own URL (qrcode library); no user input.
-              dangerouslySetInnerHTML={{ __html: svg }}
-            />
-          ) : (
-            <div className="flex h-[min(60vh,80vw)] w-[min(60vh,80vw)] items-center justify-center p-6 text-ink">
-              {status === "unpaired"
-                ? "Dieses Terminal wurde abgemeldet."
-                : status === "offline"
-                  ? "Keine Verbindung zum Server …"
-                  : "Lädt …"}
+        {pinMode && pinPeople ? (
+          <PinPunch people={pinPeople} onDone={leavePin} />
+        ) : (
+          <>
+            <div className="rounded-3xl bg-white p-4 shadow-lg">
+              {svg ? (
+                <div
+                  className="h-[min(60vh,80vw)] w-[min(60vh,80vw)] [&>svg]:h-full [&>svg]:w-full"
+                  // Server-generated SVG of our own URL (qrcode library); no user input.
+                  dangerouslySetInnerHTML={{ __html: svg }}
+                />
+              ) : (
+                <div className="flex h-[min(60vh,80vw)] w-[min(60vh,80vw)] items-center justify-center p-6 text-ink">
+                  {status === "unpaired"
+                    ? "Dieses Terminal wurde abgemeldet."
+                    : status === "offline"
+                      ? "Keine Verbindung zum Server …"
+                      : "Lädt …"}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="max-w-md space-y-1">
-          <p className="text-lg font-medium">Mit der Handykamera scannen, um zu stempeln.</p>
-          <p className="text-sm opacity-80">
-            Der Code wechselt alle 30 Sekunden.
-            {status === "offline" && svg ? " Verbindung wird wiederhergestellt …" : ""}
-          </p>
-        </div>
+            <div className="max-w-md space-y-1">
+              <p className="text-lg font-medium">Mit der Handykamera scannen, um zu stempeln.</p>
+              <p className="text-sm opacity-80">
+                Der Code wechselt alle 30 Sekunden.
+                {status === "offline" && svg ? " Verbindung wird wiederhergestellt …" : ""}
+              </p>
+            </div>
+            {pinPeople && (
+              <button
+                type="button"
+                onClick={() => setPinMode(true)}
+                className="rounded-2xl border border-white/60 px-6 py-3 text-lg font-medium hover:bg-white/10"
+              >
+                Ohne Handy stempeln (PIN)
+              </button>
+            )}
+          </>
+        )}
       </div>
     </main>
   );

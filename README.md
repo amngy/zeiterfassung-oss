@@ -17,7 +17,10 @@ payroll-ready exports — all in German for end users.
 - **Clock in / out, breaks**, with a live "today" status — in the browser, or
   by scanning the **rotating QR code on an entrance terminal** (a tablet under
   Verwaltung → Terminals; the code changes every 30 s and is accepted for at
-  most 90 s). Every punch records how it arrived (browser / QR + terminal).
+  most 90 s). Staff without a smartphone can punch at the terminal by tapping
+  their name and entering a six-digit PIN (switched on per terminal; wrong PINs
+  lock the account, and a terminal with many failures, for 15 minutes). Every
+  punch records how it arrived (browser / QR or PIN + terminal).
 - **Timesheets** by day / week / month with worked time, breaks and overtime
   (Gleitzeitsaldo).
 - **Tamper-evident corrections:** times are never overwritten — a correction
