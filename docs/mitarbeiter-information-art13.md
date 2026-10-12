@@ -21,7 +21,9 @@ Daten wir warum verarbeiten und welche Rechte Sie haben.
   Arbeitszeitmodell (Wochentage und Stunden), Bundesland (für Feiertage).
 - **Sondermerkmale**, soweit für gesetzliche Ansprüche erforderlich: Geburtsdatum
   (Jugendarbeitsschutz), Schwerbehinderung (Zusatzurlaub), Minijob-Status.
-- **Arbeitszeiten:** Beginn, Ende, Pausen, Korrekturen samt Begründung.
+- **Arbeitszeiten:** Beginn, Ende, Pausen, Korrekturen samt Begründung;
+  [nur falls genutzt:] Buchungen im Arbeitszeitkonto (Anfangssaldo, Auszahlung,
+  Verfall, Korrektur) samt Begründung.
 - **Erfassungsweg je Stempelung:** wie ein Beginn oder Ende erfasst wurde
   (z. B. „Browser“, „QR-Code“ oder PIN am Terminal, dann mit dessen Bezeichnung wie
   „Eingang“). [Nur falls aktiviert:] zusätzlich der grob erkannte

@@ -20,6 +20,8 @@ import { getUserCorrections, getOpenEntries, RESOLVE_OPEN_AFTER_MS } from "@/lib
 import { findRemoteReviewFlags, reviewStateByDay } from "@/lib/punch-review";
 import { cn } from "@/lib/cn";
 import { ClockCard } from "./clock-card";
+import { OvertimeCard } from "./overtime-card";
+import { getOvertimeAccount } from "@/lib/overtime";
 import { CorrectionForm, type CorrectableEntry } from "./correction-form";
 import { OpenEntryForm, type OpenEntry } from "./open-entry-form";
 import {
@@ -67,13 +69,14 @@ export default async function ZeitenPage({
     sp.view === "day" || sp.view === "month" ? sp.view : "week";
   const anchor = isValidAnchor(sp.d) ? sp.d : todayKey;
 
-  const [today, sheet, corrections, openEntries] = await Promise.all([
+  const [today, sheet, corrections, openEntries, overtime] = await Promise.all([
     getTodayView(user.id, asOf),
     getTimesheet(user.id, view, anchor, asOf),
     getUserCorrections(user.id),
     // Every still-running entry, regardless of age. One of these blocking a
     // clock-in is the whole lockout bug, so it is loaded on every view.
     getOpenEntries(user.id),
+    getOvertimeAccount(user.id, asOf),
   ]);
 
   const reviewDays = reviewStateByDay(
@@ -168,6 +171,8 @@ export default async function ZeitenPage({
         dayEndsAtISO={berlinDayRange(todayKey).end.toISOString()}
         actions={{ clockIn, clockOut, startBreak, endBreak }}
       />
+
+      {overtime && <OvertimeCard account={overtime} />}
 
       <section className="space-y-4">
         {/* View switcher + period navigation */}

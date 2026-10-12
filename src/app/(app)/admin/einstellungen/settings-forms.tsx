@@ -15,6 +15,7 @@ import {
   saveBreakPolicyAction,
   saveCorrectionPolicyAction,
   savePunchPolicyAction,
+  saveOvertimeLimitsAction,
   type SettingsState,
 } from "./actions";
 
@@ -360,6 +361,38 @@ export function PunchPolicyForm({ s }: { s: AppSettings }) {
       >
         <Input id="pp-device-months" name="deviceLabelMonths" type="number" min={1} max={24} step={1} defaultValue={s.punchPolicy.deviceLabelMonths} className="max-w-xs" />
       </Field>
+      <Banner state={state} />
+      <div className="flex justify-end">
+        <Button type="submit" disabled={pending}>
+          Speichern
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export function OvertimeLimitsForm({ s }: { s: AppSettings }) {
+  const [state, action, pending] = useActionState<SettingsState, FormData>(saveOvertimeLimitsAction, {});
+  return (
+    <form action={action} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Obergrenze (Plusstunden)"
+          htmlFor="ot-cap"
+          hint="0 = keine"
+          info={`Liegt ein Arbeitszeitkonto darüber, wird das bei der Person und in der Auswertung markiert. Es wird nichts automatisch gekappt: Ob Stunden über der Grenze ausgezahlt werden oder verfallen, regeln Arbeitsvertrag, Tarifvertrag oder Betriebsvereinbarung — die Verwaltung bucht das bei der Person als „Auszahlung“ oder „Verfall / Kappung“.`}
+        >
+          <Input id="ot-cap" name="capHours" type="number" min={0} max={2000} step={1} defaultValue={s.overtimeLimits.capHours} />
+        </Field>
+        <Field
+          label="Untergrenze (Minusstunden)"
+          htmlFor="ot-floor"
+          hint="0 = keine"
+          info={`Als positive Zahl eingeben: 20 bedeutet höchstens 20 Minusstunden. Ein Konto darunter wird markiert, sonst passiert nichts.`}
+        >
+          <Input id="ot-floor" name="floorHours" type="number" min={0} max={2000} step={1} defaultValue={s.overtimeLimits.floorHours} />
+        </Field>
+      </div>
       <Banner state={state} />
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>

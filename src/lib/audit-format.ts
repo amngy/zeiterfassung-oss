@@ -184,6 +184,11 @@ const ACTIONS: Record<string, ActionMeta> = {
   "settings.minorRuleProfile": { label: "Einstellungen · Jugend-Regelprofil", category: "einstellung" },
   "settings.correctionPolicy": { label: "Einstellungen · Korrektur-Governance", category: "einstellung" },
   "settings.punchPolicy": { label: "Einstellungen · Stempeln", category: "einstellung" },
+  "settings.overtimeLimits": { label: "Einstellungen · Grenzen Arbeitszeitkonto", category: "einstellung" },
+  "overtime.start": { label: "Arbeitszeitkonto eingerichtet", category: "zeit" },
+  "overtime.book": { label: "Arbeitszeitkonto gebucht", category: "zeit" },
+  "overtime.reverse": { label: "Buchung im Arbeitszeitkonto storniert", category: "zeit" },
+  "overtime.carry-forward": { label: "Saldovortrag im Arbeitszeitkonto", category: "system" },
 
   // Terminals (QR-Code am Eingang)
   "terminal.create": { label: "Terminal angelegt", category: "einstellung" },

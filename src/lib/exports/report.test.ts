@@ -21,6 +21,7 @@ import {
   displayTotals,
   loadRawEntries,
   OPEN_ENTRY_NOTE,
+  overtimeLines,
   type MonthlyReport,
   type ReportDayRow,
 } from "./report";
@@ -107,6 +108,7 @@ function report(days: ReportDayRow[], over: Partial<MonthlyReport> = {}): Monthl
     },
     violations: [],
     recordingIssues: [],
+    overtime: null,
     absences: [],
     generatedAtKey: "2026-08-01",
     companyName: "Muster GmbH",
@@ -248,6 +250,73 @@ describe("displayTotals — the Summe row adds up", () => {
 });
 
 // ── a forgotten clock-out must be visible ───────────────────────────────────
+
+describe("overtimeLines — the Arbeitszeitkonto block adds up", () => {
+  const booking = (dayKey: string, minutes: number, extra: Partial<{ kind: "PAYOUT" | "ADJUSTMENT"; reversesId: string }> = {}) => ({
+    id: dayKey,
+    kind: extra.kind ?? ("PAYOUT" as const),
+    dayKey,
+    minutes,
+    note: "Abrechnung",
+    createdAt: new Date(),
+    createdByName: null,
+    reversesId: extra.reversesId ?? null,
+    reversed: false,
+  });
+
+  it("is absent without an account", () => {
+    expect(overtimeLines(report([day({ dayKey: "2026-07-01" })]))).toBeNull();
+  });
+
+  it("prints Übertrag + Saldo + Buchungen = Stand for a closed month", () => {
+    const days = [
+      day({ dayKey: "2026-07-01", workedMs: 9.5 * HOUR_MS, expectedMs: 8 * HOUR_MS }),
+      day({ dayKey: "2026-07-02", workedMs: 8 * HOUR_MS, expectedMs: 8 * HOUR_MS }),
+    ];
+    const lines = overtimeLines(
+      report(days, {
+        overtime: {
+          carryInMs: 12.25 * HOUR_MS,
+          bookings: [booking("2026-07-15", -600), booking("2026-07-20", 90, { kind: "ADJUSTMENT", reversesId: "x" })],
+          bookedMs: -510 * 60_000,
+        },
+      }),
+    )!;
+    expect(lines.carryInHours).toBe(12.25);
+    expect(lines.monthHours).toBe(1.5);
+    expect(lines.bookings.map((b) => [b.label, b.hours])).toEqual([
+      ["Auszahlung", -10],
+      ["Storno: Korrektur", 1.5],
+    ]);
+    expect(lines.endHours).toBe(5.25);
+    expect(lines.endLabel).toBe("Stand Fr, 31.07.2026");
+  });
+
+  it("uses the running balance while the month is open, and says so", () => {
+    const days = [day({ dayKey: "2026-07-01", workedMs: 10 * HOUR_MS, expectedMs: 8 * HOUR_MS })];
+    const lines = overtimeLines(
+      report(days, {
+        generatedAtKey: "2026-07-01",
+        totals: { workedMs: 10 * HOUR_MS, breakMs: 0, expectedMs: 8 * HOUR_MS, absenceMs: 0, balanceMs: 2 * HOUR_MS, balanceToDateMs: 2 * HOUR_MS },
+        overtime: { carryInMs: 0, bookings: [], bookedMs: 0 },
+      }),
+    )!;
+    expect(lines.monthHours).toBe(2);
+    expect(lines.endHours).toBe(2);
+    expect(lines.endLabel).toBe("Stand Mi, 01.07.2026");
+  });
+
+  it("appears in the CSV", () => {
+    const csv = monthlyReportCsv(
+      report([day({ dayKey: "2026-07-01", workedMs: 8 * HOUR_MS, expectedMs: 8 * HOUR_MS })], {
+        overtime: { carryInMs: 3 * HOUR_MS, bookings: [], bookedMs: 0 },
+      }),
+    );
+    expect(csv).toContain("Arbeitszeitkonto;;Stunden");
+    expect(csv).toContain("Übertrag;;3,00");
+    expect(csv).toContain("Stand Fr, 31.07.2026;;3,00");
+  });
+});
 
 describe("open entries (forgotten clock-out)", () => {
   it("marks the affected day, so it differs from a day not worked", () => {
