@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { effectiveRetentionYears, retentionCutoffYear } from "./retention";
+import { deviceLabelCutoff, effectiveRetentionYears, retentionCutoffYear } from "./retention";
 
 describe("retentionCutoffYear", () => {
   it("keeps the configured number of full calendar years before the current one", () => {
@@ -23,5 +23,20 @@ describe("retentionCutoffYear", () => {
     expect(effectiveRetentionYears(3.7)).toBe(3);
     expect(effectiveRetentionYears(Number.NaN)).toBe(2);
     expect(effectiveRetentionYears(10)).toBe(10);
+  });
+});
+
+describe("deviceLabelCutoff", () => {
+  const at = new Date("2026-10-11T12:00:00Z");
+  it("goes back whole calendar months", () => {
+    expect(deviceLabelCutoff(at, 3).toISOString()).toBe("2026-07-11T12:00:00.000Z");
+    expect(deviceLabelCutoff(at, 12).toISOString()).toBe("2025-10-11T12:00:00.000Z");
+  });
+  it("lands on the last day of a shorter month", () => {
+    expect(deviceLabelCutoff(new Date("2026-05-31T08:00:00Z"), 3).toISOString()).toBe("2026-02-28T08:00:00.000Z");
+  });
+  it("keeps to the bounds", () => {
+    expect(deviceLabelCutoff(at, 0).toISOString()).toBe("2026-09-11T12:00:00.000Z");
+    expect(deviceLabelCutoff(at, 99).toISOString()).toBe("2024-10-11T12:00:00.000Z");
   });
 });

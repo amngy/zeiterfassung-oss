@@ -230,7 +230,9 @@ Anwendung, wie viele Datensätze vor dem Stichtag liegen, und löscht sie nach
 Bestätigung (Eingabe „LÖSCHEN“) in einem Vorgang: Zeiteinträge samt
 Stempelereignissen, Korrekturanträge, Abwesenheiten, Urlaubsjahre und
 Protokolleinträge. Deaktivierte Konten mit Austrittsdatum vor dem Stichtag
-werden anonymisiert. Arbeitszeitmodelle und Feiertage bleiben. Der Vorgang wird
+werden anonymisiert. Unabhängig davon wird der Gerätetyp von Stempelungen nach
+einer eigenen, kürzeren Frist entfernt (Einstellungen → Stempeln,
+Voreinstellung 3 Monate); Zeitpunkt und Erfassungsweg bleiben. Arbeitszeitmodelle und Feiertage bleiben. Der Vorgang wird
 mit Stichtag und Anzahl je Art protokolliert, ohne Inhalte. In älteren
 Sicherungen bleiben gelöschte Daten bis zu deren Rotation erhalten. Datensparsamkeit (keine Biometrie, kein Standort,
 keine Gerätekennung), HTTPS, argon2id-Hashing, Login-Sperre, Sicherheits-Header.

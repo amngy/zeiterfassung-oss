@@ -4,6 +4,7 @@ import { Archive, Check, ShieldAlert } from "lucide-react";
 import { requireAdmin } from "@/lib/session";
 import { getRetentionReport, totalRecords, type RetentionCounts } from "@/lib/retention";
 import { MIN_RETENTION_YEARS } from "@/lib/time/retention";
+import { berlinDayKey, formatDayKey } from "@/lib/time";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoHint } from "@/components/ui/info-hint";
 import { purgeExpiredAction } from "./actions";
@@ -20,18 +21,20 @@ const ROWS: { key: keyof RetentionCounts; label: string; info: string }[] = [
 ];
 
 const dateDe = (key: string) => key.split("-").reverse().join(".");
+const instantDe = (d: Date) => formatDayKey(berlinDayKey(d)).slice(4);
 
 export default async function AdminRetentionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ fehler?: string; geloescht?: string; anonymisiert?: string }>;
+  searchParams: Promise<{ fehler?: string; geloescht?: string; geraete?: string; anonymisiert?: string }>;
 }) {
   await requireAdmin();
-  const { fehler, geloescht, anonymisiert } = await searchParams;
+  const { fehler, geloescht, geraete, anonymisiert } = await searchParams;
   const report = await getRetentionReport();
   const total = totalRecords(report.counts);
   const cutoff = dateDe(`${report.cutoffYear}-01-01`);
-  const nothingToDo = total === 0 && report.departed.length === 0;
+  const devices = report.counts.deviceLabels;
+  const nothingToDo = total === 0 && devices === 0 && report.departed.length === 0;
 
   return (
     <div className="space-y-6">
@@ -45,7 +48,8 @@ export default async function AdminRetentionPage({
 
       {geloescht !== undefined && (
         <p className="flex items-center gap-2 rounded-lg bg-lime/15 px-3 py-2 text-sm font-medium text-lime-dark">
-          <Check className="h-4 w-4" /> {geloescht} Datensätze gelöscht, {anonymisiert ?? 0} Konten anonymisiert.
+          <Check className="h-4 w-4" /> {geloescht} Datensätze gelöscht, {geraete ?? 0} Gerätetypen entfernt,{" "}
+          {anonymisiert ?? 0} Konten anonymisiert.
         </p>
       )}
       {fehler && <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm font-medium text-danger">{fehler}</p>}
@@ -78,6 +82,11 @@ export default async function AdminRetentionPage({
               ))}
             </tbody>
           </table>
+
+          <p className="text-sm text-ink">
+            Gerätetypen von Stempelungen vor dem <strong>{instantDe(report.deviceCutoff)}</strong>: {devices}{" "}
+            <InfoHint>{`Der Gerätetyp (z. B. „iPhone · Safari“) muss nicht aufbewahrt werden und wird nach ${report.deviceLabelMonths} Monaten entfernt (Einstellungen → Stempeln). Zeitpunkt und Erfassungsweg der Stempelung bleiben.`}</InfoHint>
+          </p>
 
           <div>
             <p className="text-sm font-medium text-ink">
@@ -127,6 +136,7 @@ export default async function AdminRetentionPage({
                 />
                 <button className="rounded-xl bg-danger px-4 py-2 text-sm font-medium text-white hover:bg-danger-dark">
                   {total} Datensätze löschen
+                  {devices > 0 && `, ${devices} Gerätetypen entfernen`}
                   {report.departed.length > 0 && `, ${report.departed.length} Konten anonymisieren`}
                 </button>
               </form>

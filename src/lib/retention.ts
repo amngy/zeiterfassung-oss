@@ -16,6 +16,9 @@
 //   AuditLog           rows written before the cutoff. The trail exists to
 //                      prove changes during the retention period; once that
 //                      period has ended for a row, so has the reason to keep it.
+// Device types (#34): on punches older than the much shorter device-type
+// period (Einstellungen → Stempeln) `ClockEvent.deviceLabel` is cleared; time
+// and channel stay.
 // Accounts: an inactive, not yet anonymised person whose Austrittsdatum lies
 // before the cutoff is anonymised (anonymizeUser) — their records are gone by
 // then anyway. Without an Austrittsdatum nobody can tell when the period
@@ -33,7 +36,7 @@ import { writeAudit } from "@/lib/audit";
 import { anonymizeUser } from "@/lib/dsgvo";
 import { getAppSettings } from "@/lib/settings";
 import { berlinDayKey, berlinDayRange } from "@/lib/time";
-import { effectiveRetentionYears, retentionCutoffYear } from "@/lib/time/retention";
+import { deviceLabelCutoff, effectiveRetentionYears, retentionCutoffYear } from "@/lib/time/retention";
 
 export interface RetentionCounts {
   timeEntries: number;
@@ -42,6 +45,8 @@ export interface RetentionCounts {
   absences: number;
   vacationYears: number;
   auditEntries: number;
+  /** Punches whose device type is cleared (the punch itself stays). */
+  deviceLabels: number;
 }
 
 export interface RetentionReport {
@@ -51,6 +56,9 @@ export interface RetentionReport {
   /** Oldest year that is kept; everything before 1 January of it may go. */
   cutoffYear: number;
   counts: RetentionCounts;
+  deviceLabelMonths: number;
+  /** Punches before this instant lose their device type. */
+  deviceCutoff: Date;
   /** Inactive accounts whose Austrittsdatum lies before the cutoff. */
   departed: { id: string; name: string; employmentEnd: string }[];
   /** Inactive, not anonymised accounts without an Austrittsdatum. */
@@ -63,12 +71,18 @@ interface Scope {
   instant: Date;
   /** The same day as a @db.Date value (UTC midnight). */
   date: Date;
+  deviceCutoff: Date;
 }
 
-function scopeFor(asOf: Date, configuredYears: number): Scope {
+function scopeFor(asOf: Date, configuredYears: number, deviceMonths: number): Scope {
   const cutoffYear = retentionCutoffYear(berlinDayKey(asOf), configuredYears);
   const key = `${cutoffYear}-01-01`;
-  return { cutoffYear, instant: berlinDayRange(key).start, date: new Date(key) };
+  return {
+    cutoffYear,
+    instant: berlinDayRange(key).start,
+    date: new Date(key),
+    deviceCutoff: deviceLabelCutoff(asOf, deviceMonths),
+  };
 }
 
 function wheres(s: Scope) {
@@ -79,6 +93,12 @@ function wheres(s: Scope) {
     absence: { endDate: { lt: s.date } } satisfies Prisma.AbsenceWhereInput,
     vacationYear: { year: { lt: s.cutoffYear } } satisfies Prisma.VacationYearWhereInput,
     audit: { createdAt: { lt: s.instant } } satisfies Prisma.AuditLogWhereInput,
+    // Only on punches that survive the deletion above.
+    deviceLabel: {
+      deviceLabel: { not: null },
+      at: { lt: s.deviceCutoff },
+      timeEntry: { start: { gte: s.instant } },
+    } satisfies Prisma.ClockEventWhereInput,
     departed: {
       active: false,
       anonymizedAt: null,
@@ -89,21 +109,23 @@ function wheres(s: Scope) {
 
 async function countAll(db: Prisma.TransactionClient | typeof prisma, s: Scope): Promise<RetentionCounts> {
   const w = wheres(s);
-  const [timeEntries, clockEvents, corrections, absences, vacationYears, auditEntries] = await Promise.all([
-    db.timeEntry.count({ where: w.timeEntry }),
-    db.clockEvent.count({ where: w.clockEvent }),
-    db.correctionRequest.count({ where: w.correction }),
-    db.absence.count({ where: w.absence }),
-    db.vacationYear.count({ where: w.vacationYear }),
-    db.auditLog.count({ where: w.audit }),
-  ]);
-  return { timeEntries, clockEvents, corrections, absences, vacationYears, auditEntries };
+  const [timeEntries, clockEvents, corrections, absences, vacationYears, auditEntries, deviceLabels] =
+    await Promise.all([
+      db.timeEntry.count({ where: w.timeEntry }),
+      db.clockEvent.count({ where: w.clockEvent }),
+      db.correctionRequest.count({ where: w.correction }),
+      db.absence.count({ where: w.absence }),
+      db.vacationYear.count({ where: w.vacationYear }),
+      db.auditLog.count({ where: w.audit }),
+      db.clockEvent.count({ where: w.deviceLabel }),
+    ]);
+  return { timeEntries, clockEvents, corrections, absences, vacationYears, auditEntries, deviceLabels };
 }
 
 /** What a purge run now would delete and anonymise. Read-only. */
 export async function getRetentionReport(asOf: Date = new Date()): Promise<RetentionReport> {
-  const { retentionYears: configuredYears } = await getAppSettings();
-  const s = scopeFor(asOf, configuredYears);
+  const { retentionYears: configuredYears, punchPolicy } = await getAppSettings();
+  const s = scopeFor(asOf, configuredYears, punchPolicy.deviceLabelMonths);
   const [counts, departed, inactiveWithoutEnd] = await Promise.all([
     countAll(prisma, s),
     prisma.user.findMany({
@@ -118,6 +140,8 @@ export async function getRetentionReport(asOf: Date = new Date()): Promise<Reten
     configuredYears,
     cutoffYear: s.cutoffYear,
     counts,
+    deviceLabelMonths: punchPolicy.deviceLabelMonths,
+    deviceCutoff: s.deviceCutoff,
     departed: departed.map((u) => ({
       id: u.id,
       name: u.name,
@@ -133,6 +157,7 @@ export interface PurgeResult {
   anonymized: number;
 }
 
+/** Rows deleted — cleared device types are counted separately. */
 export function totalRecords(c: RetentionCounts): number {
   return c.timeEntries + c.clockEvents + c.corrections + c.absences + c.vacationYears + c.auditEntries;
 }
@@ -144,8 +169,8 @@ export function totalRecords(c: RetentionCounts): number {
  * one leaves the purge itself intact and can simply be retried.
  */
 export async function purgeExpiredRecords(actorId: string, asOf: Date = new Date()): Promise<PurgeResult> {
-  const { retentionYears: configuredYears } = await getAppSettings();
-  const s = scopeFor(asOf, configuredYears);
+  const { retentionYears: configuredYears, punchPolicy } = await getAppSettings();
+  const s = scopeFor(asOf, configuredYears, punchPolicy.deviceLabelMonths);
   const w = wheres(s);
 
   const counts = await prisma.$transaction(async (tx) => {
@@ -156,7 +181,21 @@ export async function purgeExpiredRecords(actorId: string, asOf: Date = new Date
     const absences = (await tx.absence.deleteMany({ where: w.absence })).count;
     const vacationYears = (await tx.vacationYear.deleteMany({ where: w.vacationYear })).count;
     const auditEntries = (await tx.auditLog.deleteMany({ where: w.audit })).count;
-    const c: RetentionCounts = { timeEntries, clockEvents, corrections, absences, vacationYears, auditEntries };
+    const deviceLabels = (
+      await tx.clockEvent.updateMany({
+        where: { deviceLabel: { not: null }, at: { lt: s.deviceCutoff } },
+        data: { deviceLabel: null },
+      })
+    ).count;
+    const c: RetentionCounts = {
+      timeEntries,
+      clockEvents,
+      corrections,
+      absences,
+      vacationYears,
+      auditEntries,
+      deviceLabels,
+    };
     // Counts and the cutoff only — the deleted content must not survive here.
     await writeAudit(tx, {
       actorUserId: actorId,
@@ -165,6 +204,7 @@ export async function purgeExpiredRecords(actorId: string, asOf: Date = new Date
       newValue: {
         cutoff: `${s.cutoffYear}-01-01`,
         retentionYears: effectiveRetentionYears(configuredYears),
+        deviceCutoff: s.deviceCutoff.toISOString(),
         ...c,
       },
     });

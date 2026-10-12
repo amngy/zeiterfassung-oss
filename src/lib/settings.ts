@@ -66,6 +66,8 @@ export interface PunchPolicy {
    * minutes over its Soll is shown to admins for review (#32). 0 = off.
    */
   reviewRemoteOvertimeMinutes: number;
+  /** Punches older than this many months lose their device type (#34). */
+  deviceLabelMonths: number;
 }
 
 export interface CorrectionPolicy {
@@ -140,7 +142,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     lockAfterDays: 0,
     autoLockOnMonthExport: true,
   },
-  punchPolicy: { recordDeviceType: false, reviewRemoteOvertimeMinutes: 60 },
+  punchPolicy: { recordDeviceType: false, reviewRemoteOvertimeMinutes: 60, deviceLabelMonths: 3 },
 };
 
 type SettingKey = keyof AppSettings;
