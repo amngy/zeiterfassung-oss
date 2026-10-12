@@ -23,7 +23,7 @@ Daten wir warum verarbeiten und welche Rechte Sie haben.
   (Jugendarbeitsschutz), Schwerbehinderung (Zusatzurlaub), Minijob-Status.
 - **Arbeitszeiten:** Beginn, Ende, Pausen, Korrekturen samt Begründung.
 - **Erfassungsweg je Stempelung:** wie ein Beginn oder Ende erfasst wurde
-  (z. B. „Browser“ oder „QR-Code“ am Terminal, dann mit dessen Bezeichnung wie
+  (z. B. „Browser“, „QR-Code“ oder PIN am Terminal, dann mit dessen Bezeichnung wie
   „Eingang“). [Nur falls aktiviert:] zusätzlich der grob erkannte
   Gerätetyp (z. B. „iPhone · Safari“), damit sich prüfen lässt, ob eine
   Stempelung plausibel ist — etwa ob ein Arbeitsende am Arbeitsplatz oder auf

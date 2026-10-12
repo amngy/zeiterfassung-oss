@@ -52,7 +52,7 @@ export interface ClockResult {
 export interface PunchContext {
   channel: ClockChannel;
   deviceLabel: string | null;
-  /** The on-site terminal whose QR code was scanned (channel QR). */
+  /** The on-site terminal: its QR code was scanned (QR) or it took a PIN (KIOSK). */
   terminalId?: string | null;
 }
 

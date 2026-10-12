@@ -41,6 +41,17 @@ Anwesenheit, kein Beweis: ein laufend weitergeleitetes Foto des Codes lässt sic
 technisch nicht ausschließen. Terminals werden von der Administration
 gekoppelt und deaktiviert (protokolliert).
 
+Für Beschäftigte ohne Smartphone kann je Terminal das **Stempeln mit PIN**
+eingeschaltet werden: Name antippen, sechsstellige PIN eingeben. Die PIN
+vergibt die Administration (zufällig erzeugt, nur einmal angezeigt, nur als
+Hash gespeichert); Vergabe, Entfernen und das Ein-/Ausschalten am Terminal
+werden protokolliert. Nach 5 falschen PINs ist das Konto, nach 20 falschen PINs
+binnen 15 Minuten das Terminal für 15 Minuten für die PIN-Eingabe gesperrt.
+Solche Stempelungen tragen den Erfassungsweg „Terminal“ mit dessen
+Bezeichnung. Eine PIN beweist nicht, wer am Gerät stand — wer sie kennt, kann
+für die Person stempeln; deshalb ist sie nur so vertraulich wie ein Passwort zu
+behandeln.
+
 ### 3.1 Pausenautomatik
 
 Für Pausen gilt eine Ausnahme von der Regel „nichts ergänzen", weil das Unterlassen

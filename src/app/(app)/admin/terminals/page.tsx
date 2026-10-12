@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InfoHint } from "@/components/ui/info-hint";
 import { CreateTerminalForm, PairLinkButton } from "./terminal-forms";
-import { setTerminalActiveAction } from "./actions";
+import { setTerminalActiveAction, setTerminalPinAction } from "./actions";
 
 export const metadata: Metadata = { title: "Terminals" };
 
@@ -88,6 +88,23 @@ export default async function AdminTerminalsPage() {
                     </form>
                   </div>
                   {t.active && <PairLinkButton terminalId={t.id} label={t.label} />}
+                  {t.active && (
+                    <form action={setTerminalPinAction} className="flex flex-wrap items-center gap-2 text-sm">
+                      <input type="hidden" name="terminalId" value={t.id} />
+                      <input type="hidden" name="allowPin" value={t.allowPin ? "false" : "true"} />
+                      <span className="text-ink">
+                        Stempeln mit PIN:{" "}
+                        {t.allowPin ? <Badge tone="lime">an</Badge> : <Badge tone="neutral">aus</Badge>}
+                        {t.pinBlockedUntil && t.pinBlockedUntil > new Date() && (
+                          <> <Badge tone="danger">gesperrt bis {formatClock(t.pinBlockedUntil)}</Badge></>
+                        )}
+                      </span>
+                      <Button type="submit" variant="outline" size="sm">
+                        {t.allowPin ? "Ausschalten" : "Einschalten"}
+                      </Button>
+                      <InfoHint>{`Für Beschäftigte ohne Smartphone: Am Terminal den eigenen Namen wählen und die sechsstellige Terminal-PIN eingeben (vergeben unter Mitarbeitende → Person). Gespeichert wird die Stempelung mit Erfassungsweg „Terminal“ und dem Namen des Terminals. Die Namensliste zeigt nur Personen mit PIN. Nach fünf falschen PINs ist das Stempeln mit PIN für die Person 15 Minuten gesperrt, nach zwanzig falschen PINs innerhalb von 15 Minuten für das ganze Terminal. Eine PIN beweist weniger als ein eigenes Gerät: Wer sie kennt, kann für die Person stempeln.`}</InfoHint>
+                    </form>
+                  )}
                 </li>
               ))}
             </ul>

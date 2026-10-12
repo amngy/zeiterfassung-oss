@@ -9,8 +9,9 @@
 //   User                          name, email → placeholders; passwordHash → an
 //                                 unusable value; birthDate, bundesland and the
 //                                 Schwerbehinderung flag/dates → null/false;
-//                                 second factor → cleared, recovery codes
-//                                 deleted; active → false; anonymizedAt → now
+//                                 second factor and terminal PIN → cleared,
+//                                 recovery codes deleted; active → false;
+//                                 anonymizedAt → now
 //   TimeEntry.note                → null  (their rows)
 //   ClockEvent.deviceLabel        → null  (their punches; channel + time stay)
 //   Absence.note                  → null  (their rows — sick notes are Art. 9
@@ -85,12 +86,14 @@ export async function exportUserData(userId: string): Promise<unknown> {
     orderBy: { createdAt: "asc" },
   });
 
-  // Strip the password hash and the second-factor secrets (they are login
-  // credentials, not information about the person); everything else is theirs.
+  // Strip the password hash, the second-factor secrets and the terminal PIN
+  // (they are login credentials, not information about the person); everything
+  // else is theirs.
   const {
     passwordHash: _passwordHash,
     totpSecret: _totpSecret,
     totpPendingSecret: _totpPendingSecret,
+    kioskPinHash: _kioskPinHash,
     ...profile
   } = user;
 
@@ -209,6 +212,9 @@ export async function anonymizeUser(args: { actorId: string; userId: string }): 
           totpLastStep: null,
           totpFailures: 0,
           totpBlockedUntil: null,
+          kioskPinHash: null,
+          kioskPinFailures: 0,
+          kioskPinBlockedUntil: null,
           active: false,
           anonymizedAt: new Date(),
         },
