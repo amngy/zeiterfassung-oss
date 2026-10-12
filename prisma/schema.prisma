@@ -157,6 +157,12 @@ model User {
   totpFailures      Int       @default(0)
   totpBlockedUntil  DateTime?
 
+  // PIN for punching at an on-site terminal without a phone (#11), argon2id.
+  // Wrong PINs are counted per account and block PIN punching for a while.
+  kioskPinHash         String?
+  kioskPinFailures     Int       @default(0)
+  kioskPinBlockedUntil DateTime?
+
   // Anonymisation marker (DSGVO Art. 17 after retention period).
   anonymizedAt DateTime?
 
@@ -277,6 +283,14 @@ model ClockTerminal {
   lastSeenAt    DateTime?
   createdById   String?
   createdAt     DateTime  @default(now())
+
+  // Punching by name + PIN on this terminal (#11). Wrong PINs are counted per
+  // terminal in a rolling window as well, so one device cannot be used to try
+  // PINs across many accounts.
+  allowPin         Boolean   @default(false)
+  pinFailures      Int       @default(0)
+  pinFailuresSince DateTime?
+  pinBlockedUntil  DateTime?
 
   clockEvents ClockEvent[]
 }

@@ -11,6 +11,7 @@ import {
   setTerminalActive,
   TerminalError,
 } from "@/lib/terminals";
+import { setTerminalPinAllowed } from "@/lib/kiosk-pin";
 
 export interface PairLink {
   label: string;
@@ -79,5 +80,12 @@ export async function setTerminalActiveAction(formData: FormData): Promise<void>
     formData.get("active") === "true",
     admin.id,
   );
+  revalidatePath("/admin/terminals");
+}
+
+/** Switch punching by name + PIN on or off for one terminal (#11). */
+export async function setTerminalPinAction(formData: FormData): Promise<void> {
+  const admin = await requireAdmin();
+  await setTerminalPinAllowed(String(formData.get("terminalId") ?? ""), formData.get("allowPin") === "true", admin.id);
   revalidatePath("/admin/terminals");
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { terminalForCookie, TERMINAL_COOKIE } from "@/lib/terminals";
+import { kioskPinPeople } from "@/lib/kiosk-pin";
 import { KioskDisplay } from "./kiosk-display";
 
 export const metadata: Metadata = { title: "Terminal" };
@@ -23,5 +24,7 @@ export default async function TerminalPage() {
   }
   // Someone signed in on the shared device after pairing (pairing signs out).
   const signedIn = (await cookies()).getAll().some((c) => c.name.includes("authjs.session-token"));
-  return <KioskDisplay label={terminal.label} signedInWarning={signedIn} />;
+  // Names offered for PIN punching, or null where the terminal does not allow it.
+  const people = await kioskPinPeople(terminal.id);
+  return <KioskDisplay label={terminal.label} signedInWarning={signedIn} pinPeople={people} />;
 }

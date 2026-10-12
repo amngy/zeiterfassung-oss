@@ -20,10 +20,12 @@ verarbeitet werden insbesondere:
 - Stammdaten: Name, dienstliche E-Mail-Adresse, Rolle, Eintritts-/Austrittsdatum,
   Bundesland (für Feiertage), Beschäftigungsmerkmale (z. B. Minijob, leitende
   Funktion), ggf. Geburtsdatum (zur Anwendung des Jugendarbeitsschutzes) und
-  Status der Schwerbehinderung (für den gesetzlichen Zusatzurlaub).
+  Status der Schwerbehinderung (für den gesetzlichen Zusatzurlaub). [Nur falls
+  genutzt:] eine PIN zum Stempeln am Terminal — nur als nicht umkehrbarer Hash
+  gespeichert.
 - Arbeitszeitdaten: Beginn, Ende und Dauer von Arbeits- und Pausenzeiten,
   Korrekturen und deren Begründungen; je Stempelung der Erfassungsweg
-  (z. B. Browser oder QR-Code am Terminal, dann mit der Bezeichnung des
+  (z. B. Browser, QR-Code oder PIN am Terminal, dann mit der Bezeichnung des
   Terminals, z. B. „Eingang“). [Nur falls aktiviert:] zusätzlich der grob erkannte
   Gerätetyp (z. B. „iPhone · Safari“) — ohne eindeutige Gerätekennung und ohne
   Standort.

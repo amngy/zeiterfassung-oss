@@ -162,6 +162,9 @@ export interface TerminalRow {
   pairExpiresAt: Date | null;
   createdAt: Date;
   punchCount: number;
+  /** Punching by name + PIN is switched on (#11). */
+  allowPin: boolean;
+  pinBlockedUntil: Date | null;
 }
 
 export async function listTerminals(): Promise<TerminalRow[]> {
@@ -169,7 +172,8 @@ export async function listTerminals(): Promise<TerminalRow[]> {
     orderBy: [{ active: "desc" }, { label: "asc" }],
     select: {
       id: true, label: true, active: true, tokenHash: true, pairedAt: true, lastSeenAt: true,
-      pairExpiresAt: true, createdAt: true, _count: { select: { clockEvents: true } },
+      pairExpiresAt: true, createdAt: true, allowPin: true, pinBlockedUntil: true,
+      _count: { select: { clockEvents: true } },
     },
   });
   // The hash itself never leaves this module.

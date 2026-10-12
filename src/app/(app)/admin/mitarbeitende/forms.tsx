@@ -13,7 +13,9 @@ import {
   updateUserAction,
   setScheduleAction,
   resetPasswordAction,
+  issueKioskPinAction,
   type FormState,
+  type KioskPinState,
 } from "./actions";
 
 function Banner({ state }: { state: FormState }) {
@@ -364,6 +366,26 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
           Passwort zurücksetzen
         </Button>
       </div>
+    </form>
+  );
+}
+
+/** Issue a terminal PIN (#11). The PIN is shown here once and never again. */
+export function KioskPinForm({ userId, hasPin }: { userId: string; hasPin: boolean }) {
+  const [state, action, pending] = useActionState<KioskPinState, FormData>(issueKioskPinAction, {});
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-3">
+      <input type="hidden" name="userId" value={userId} />
+      <Button type="submit" variant="outline" disabled={pending}>
+        {hasPin || state.pin ? "Neue PIN erzeugen" : "PIN erzeugen"}
+      </Button>
+      {state.pin && (
+        <p className="rounded-lg bg-lime/15 px-3 py-2 text-sm text-lime-dark" role="status">
+          Neue PIN: <strong className="font-mono text-base tracking-widest">{state.pin}</strong> — bitte jetzt
+          weitergeben; sie wird nicht noch einmal angezeigt.
+        </p>
+      )}
+      {state.error && <p className="text-sm font-medium text-danger">{state.error}</p>}
     </form>
   );
 }
